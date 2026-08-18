@@ -18,6 +18,8 @@ class Job(TypedDict):
     source: NotRequired[str]
     hiring_timezones: NotRequired[str]
     location_requirements: NotRequired[str]
+    matched_skills: NotRequired[list[str]]
+    score_breakdown: NotRequired[dict[str, Any]]
     score: NotRequired[float]
 
 

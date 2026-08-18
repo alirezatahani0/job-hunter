@@ -117,6 +117,28 @@ input[type="search"] {
   font-size: 15px;
 }
 
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.score {
+  flex-shrink: 0;
+  background: #1f3d34;
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chip.match {
+  color: var(--accent);
+  border-color: #2d5c4f;
+}
+
 .job-card p { margin: 0; color: var(--muted); font-size: 13px; }
 
 .salary { color: var(--accent-2) !important; margin-top: 6px !important; }

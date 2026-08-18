@@ -28,7 +28,9 @@ function matches(job, query) {
 
 function renderList() {
   const query = searchEl.value.trim();
-  const visible = jobs.filter((job) => matches(job, query));
+  const visible = jobs
+    .filter((job) => matches(job, query))
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
   countEl.textContent = `${visible.length} of ${jobs.length} jobs`;
   listEl.innerHTML = "";
 
@@ -41,8 +43,12 @@ function renderList() {
     const btn = document.createElement("button");
     btn.className = `job-card${job.id === selectedId ? " active" : ""}`;
     btn.type = "button";
+    const score = typeof job.score === "number" ? Math.round(job.score * 100) : null;
     btn.innerHTML = `
-      <h2>${escapeHtml(job.title || "Untitled")}</h2>
+      <div class="card-top">
+        <h2>${escapeHtml(job.title || "Untitled")}</h2>
+        ${score === null ? "" : `<span class="score">${score}%</span>`}
+      </div>
       <p>${escapeHtml(job.company || "Unknown")}</p>
       <p class="salary">${escapeHtml(job.salary_text || "Salary not listed")}</p>
     `;
@@ -62,17 +68,27 @@ function selectJob(id) {
     .map((tag) => `<span class="chip">${escapeHtml(tag)}</span>`)
     .join("");
 
+  const matched = (job.matched_skills || [])
+    .map((tag) => `<span class="chip match">${escapeHtml(tag)}</span>`)
+    .join("");
+  const reasons = (job.score_breakdown?.reasons || [])
+    .map((note) => `<li>${escapeHtml(note)}</li>`)
+    .join("");
+  const score = typeof job.score === "number" ? `${Math.round(job.score * 100)}% CV match` : "Unranked";
+
   detailEl.classList.remove("empty");
   detailEl.innerHTML = `
     <p class="eyebrow">${escapeHtml(job.source || "job")}</p>
     <h1>${escapeHtml(job.title || "")}</h1>
     <p>${escapeHtml(job.company || "")}</p>
     <div class="meta">
+      <span class="chip match">${escapeHtml(score)}</span>
       <span class="chip">${escapeHtml(job.location_requirements || job.location || "Remote")}</span>
       <span class="chip">${escapeHtml(job.hiring_timezones || "Timezones n/a")}</span>
       <span class="chip">${escapeHtml(job.salary_text || "Salary not listed")}</span>
     </div>
-    <div class="meta">${tags}</div>
+    <div class="meta">${matched || tags}</div>
+    ${reasons ? `<ul class="description">${reasons}</ul>` : ""}
     <div class="description">${escapeHtml(job.description || "No description.")}</div>
     <a class="open" href="${escapeAttr(job.url || "#")}" target="_blank" rel="noreferrer">Open job posting</a>
   `;
@@ -104,14 +120,14 @@ async function loadJobs() {
 
 async function refreshJobs() {
   refreshBtn.disabled = true;
-  setStatus("Fetching from Himalayas…");
+  setStatus("Fetching and ranking against your CV…");
   try {
     const response = await fetch("/api/fetch", { method: "POST" });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Fetch failed");
     jobs = data.jobs || [];
     selectedId = jobs[0]?.id || null;
-    setStatus(`Fetched ${jobs.length} jobs`);
+    setStatus(`Ranked ${jobs.length} jobs against your CV`);
     renderList();
     if (selectedId) selectJob(selectedId);
   } catch (error) {

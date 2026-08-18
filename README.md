@@ -24,12 +24,12 @@ cp .env.example .env
 # edit .env and set OPENAI_API_KEY
 ```
 
-## Run (Himalayas fetch → state)
+## Run (fetch + rank against CV)
 
 ```bash
 export PYTHONPATH=src
-python -m job_assistant.main --fetch-only --source himalayas
-# jobs land in graph state + output/himalayas_jobs.json
+python -m job_assistant.main --until sort --source himalayas
+python -m job_assistant.web   # http://127.0.0.1:8765
 ```
 
 Only listings whose **Location requirements** are Worldwide / all countries **and** **Hiring timezones** are unrestricted / all timezones are kept.

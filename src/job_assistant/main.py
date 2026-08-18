@@ -78,7 +78,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--fetch-only",
         action="store_true",
-        help="Only fetch jobs into state (skip optimize/evaluate)",
+        help="Only fetch jobs into state (skip sort/optimize/evaluate)",
+    )
+    parser.add_argument(
+        "--until",
+        choices=["fetch", "sort", "end"],
+        default="",
+        help="Stop after this node (default: end, or fetch when --fetch-only)",
     )
     parser.add_argument(
         "--prefs-json",
@@ -121,17 +127,20 @@ def _print_jobs_table(jobs: list[dict]) -> None:
     table.add_column("#", justify="right", style="dim")
     table.add_column("Title")
     table.add_column("Company")
-    table.add_column("Location")
-    table.add_column("Timezones")
+    table.add_column("Match", justify="right")
+    table.add_column("Skills")
     table.add_column("Salary")
     table.add_column("URL", overflow="fold")
     for i, job in enumerate(jobs, start=1):
+        score = job.get("score")
+        score_text = f"{score * 100:.0f}%" if isinstance(score, (int, float)) else "—"
+        skills = ", ".join((job.get("matched_skills") or [])[:4]) or "—"
         table.add_row(
             str(i),
             job.get("title") or "",
             job.get("company") or "",
-            job.get("location_requirements") or job.get("location") or "",
-            job.get("hiring_timezones") or "—",
+            score_text,
+            skills,
             job.get("salary_text") or "—",
             job.get("url") or "",
         )
@@ -158,16 +167,17 @@ def main() -> int:
 
     preferences = load_preferences(args)
 
-    flow = (
-        "Himalayas fetch → state (worldwide location + all timezones)"
-        if args.fetch_only
-        else "fetch → sort → optimize CV → evaluate → print"
-    )
+    until = args.until or ("fetch" if args.fetch_only else "end")
+    flow = {
+        "fetch": "Himalayas fetch → state",
+        "sort": "fetch → sort against CV skills",
+        "end": "fetch → sort → optimize CV → evaluate → print",
+    }.get(until, until)
     console.print(Panel.fit(flow, title="Job Assistant Graph"))
     console.print(f"CV: {cv_path} ({len(base_cv)} chars)")
     console.print(f"Preferences: {preferences}")
 
-    app = build_graph(fetch_only=args.fetch_only)
+    app = build_graph(until=until)
     result = app.invoke(
         {
             "preferences": preferences,
@@ -187,11 +197,12 @@ def main() -> int:
     for message in result.get("messages") or []:
         console.print(f"• {message}")
 
-    jobs = result.get("jobs") or []
-    if args.fetch_only:
+    jobs = result.get("sorted_jobs") or result.get("jobs") or []
+    if until in {"fetch", "sort"}:
         _print_jobs_table(jobs)
+        label = "ranked" if until == "sort" else "saved"
         console.print(
-            f"\n[green]Saved {len(jobs)} jobs in graph state[/green] "
+            f"\n[green]{len(jobs)} jobs {label} in graph state[/green] "
             f"(and output/himalayas_jobs.json)."
         )
         return 0

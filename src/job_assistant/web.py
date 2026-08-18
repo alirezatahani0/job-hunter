@@ -45,7 +45,7 @@ def load_saved_jobs() -> dict:
 def fetch_jobs() -> dict:
     cv_path = ROOT / DEFAULT_CV
     base_cv = load_cv(cv_path) if cv_path.exists() else " "
-    app = build_graph(fetch_only=True)
+    app = build_graph(until="sort")
     result = app.invoke(
         {
             "preferences": {

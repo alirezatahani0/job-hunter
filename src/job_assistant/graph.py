@@ -10,33 +10,40 @@ from job_assistant.nodes.sort_jobs import sort_jobs_node
 from job_assistant.state import JobAssistantState
 
 
-def build_graph(*, fetch_only: bool = False):
+def build_graph(*, fetch_only: bool = False, until: str | None = None):
     """Build and compile the job assistant workflow.
 
     Full flow:
       fetch_jobs -> sort_jobs -> optimize_cv -> evaluate_cv -> print_output
 
-    fetch_only:
-      fetch_jobs -> END  (jobs remain in state / output/himalayas_jobs.json)
+    until:
+      fetch — stop after fetching
+      sort  — fetch then rank against the CV
+      end   — full pipeline
     """
-    graph = StateGraph(JobAssistantState)
+    if until is None:
+        until = "fetch" if fetch_only else "end"
 
+    graph = StateGraph(JobAssistantState)
     graph.add_node("fetch_jobs", fetch_jobs_node)
     graph.add_edge(START, "fetch_jobs")
 
-    if fetch_only:
+    if until == "fetch":
         graph.add_edge("fetch_jobs", END)
         return graph.compile()
 
     graph.add_node("sort_jobs", sort_jobs_node)
+    graph.add_edge("fetch_jobs", "sort_jobs")
+    if until == "sort":
+        graph.add_edge("sort_jobs", END)
+        return graph.compile()
+
     graph.add_node("optimize_cv", optimize_cv_node)
     graph.add_node("evaluate_cv", evaluate_cv_node)
     graph.add_node("print_output", print_output_node)
 
-    graph.add_edge("fetch_jobs", "sort_jobs")
     graph.add_edge("sort_jobs", "optimize_cv")
     graph.add_edge("optimize_cv", "evaluate_cv")
     graph.add_edge("evaluate_cv", "print_output")
     graph.add_edge("print_output", END)
-
     return graph.compile()

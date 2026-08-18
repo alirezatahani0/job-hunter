@@ -65,7 +65,7 @@ def _apply_filters(jobs: list[Job], prefs: dict) -> list[Job]:
     return filtered
 
 
-def _persist_jobs(jobs: list[Job], path: str | Path) -> str:
+def persist_jobs(jobs: list[Job], path: str | Path) -> str:
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -181,7 +181,7 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
     }
 
     if filtered:
-        path = _persist_jobs(filtered, snapshot_path)
+        path = persist_jobs(filtered, snapshot_path)
         updates["messages"].append(f"Wrote job list snapshot to {path}")
 
     return updates
