@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Job Assistant</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Job Assistant</p>
+        <h1>Fetched jobs</h1>
+      </div>
+      <div class="actions">
+        <button id="refresh-btn" type="button">Refresh from Himalayas</button>
+        <span id="status" class="status">Loading…</span>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Search title, company, or skill" />
+      <p id="count" class="count"></p>
+    </section>
+
+    <main class="layout">
+      <aside id="list" class="list"></aside>
+      <article id="detail" class="detail empty">
+        <p>Select a job to read the description.</p>
+      </article>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

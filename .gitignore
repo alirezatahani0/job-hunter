@@ -1,0 +1,40 @@
+# Virtual env (this project uses a root venv)
+bin/
+include/
+lib/
+lib64/
+pyvenv.cfg
+share/
+.Python
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env & secrets
+.env
+.env.local
+*.pem
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Outputs
+output/
+
+# Resume PDFs (keep markdown CVs)
+*.pdf
