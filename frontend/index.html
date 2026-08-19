@@ -4,31 +4,46 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Job Assistant</p>
-        <h1>Jobs ranked for your CV</h1>
-      </div>
-      <div class="actions">
-        <button id="refresh-btn" type="button">Fetch & rank</button>
-        <span id="status" class="status">Loading…</span>
-      </div>
-    </header>
+    <div class="atmosphere" aria-hidden="true"></div>
+    <div class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Job Assistant // live board</p>
+          <h1>Ranked remote roles</h1>
+        </div>
+        <div class="actions">
+          <button id="refresh-btn" type="button">Fetch &amp; rank</button>
+          <span id="status" class="status" role="status">Loading…</span>
+        </div>
+      </header>
 
-    <section class="toolbar">
-      <input id="search" type="search" placeholder="Search title, company, or skill" />
-      <p id="count" class="count"></p>
-    </section>
+      <section class="toolbar">
+        <label class="search-wrap">
+          <span>Filter</span>
+          <input id="search" type="search" placeholder="Title, company, or skill" />
+        </label>
+        <p id="count" class="count"></p>
+      </section>
 
-    <main class="layout">
-      <aside id="list" class="list"></aside>
-      <article id="detail" class="detail empty">
-        <p>Select a job to read the description.</p>
-      </article>
-    </main>
+      <main class="layout">
+        <aside class="list-shell">
+          <p class="pane-label">Matches</p>
+          <div id="list" class="list"></div>
+        </aside>
+        <article id="detail" class="detail empty">
+          <p>Select a listing to inspect the JD, ATS score, and resume actions.</p>
+        </article>
+      </main>
+    </div>
 
     <script src="/app.js"></script>
   </body>

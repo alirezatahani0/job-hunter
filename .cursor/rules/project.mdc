@@ -1,0 +1,40 @@
+---
+description: What Job Assistant is, how it is structured, and where to look
+alwaysApply: true
+---
+
+# Job Assistant
+
+Personal LangGraph app: fetch remote jobs, rank them against a CV, optionally tailor the CV, score it, and browse ranked jobs in a local UI.
+
+## Layout
+
+- `src/job_assistant/` — Python package (graph, nodes, services, CLI, web)
+- `frontend/` — static UI (`index.html`, `app.js`, `styles.css`) served by `python -m job_assistant.web`
+- `data/` — markdown CVs (`alireza_tahani_cv.md` is the real one). Downloads convert to Word `.docx`.
+- `output/` — generated jobs JSON, tailored markdown, and Word downloads (gitignored)
+- Root venv (`bin/activate`), not `.venv`. `PYTHONPATH=src`.
+
+## Pipeline
+
+`fetch_jobs → sort_jobs → optimize_cv → evaluate_cv → print_output`
+
+CLI can stop early with `--until fetch|sort|optimize|end`. Web UI **Fetch & rank** runs until sort. **Check ATS** runs a local pass/fail (no API). **Tailor resume to this JD** calls `POST /api/optimize` (needs `ANTHROPIC_API_KEY`).
+
+Default job source: Himalayas. Keep only worldwide / all-timezone roles. Other sources: wellfound, auto, remoteok, remotive.
+
+Sort uses CV skill overlap (`cv_matcher`), not salary-first heuristics. Optimize may only emphasize skills already on the CV, then humanizes wording for ATS.
+
+## Run
+
+```bash
+source bin/activate
+export PYTHONPATH=src
+python -m job_assistant.web   # http://127.0.0.1:8765
+```
+
+Needs `ANTHROPIC_API_KEY` in `.env` for optimize only. ATS check is local. Do not commit `.env` or PDFs. Resume downloads are `.docx`, not PDF.
+
+## Context files
+
+Before exploring the repo, read `docs/STATUS.md` and `docs/DECISIONS.md`. After a decision or a finished change, update those files.

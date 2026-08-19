@@ -32,6 +32,7 @@ class EvaluationScores(TypedDict):
     ai_detected: bool
     overall: float
     feedback: list[str]
+    missing_skills: NotRequired[list[str]]
 
 
 class JobAssistantState(TypedDict):
@@ -47,6 +48,7 @@ class JobAssistantState(TypedDict):
     sorted_jobs: list[Job]
     selected_job: Job | None
     updated_cv: str
+    cv_changes: list[str]
     evaluation: EvaluationScores | None
     output_path: str
     messages: list[str]

@@ -1,51 +1,67 @@
 from __future__ import annotations
 
-import json
 import os
-import re
 from typing import Any, TypeVar
 
-from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
+_CV_ALIASES = ("updated_cv", "resume", "cv", "updated_resume", "markdown", "text")
+_CHANGES_ALIASES = ("changes_made", "changes", "edits", "notes")
 
-def get_llm(temperature: float = 0.2) -> ChatOpenAI:
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    api_key = os.getenv("OPENAI_API_KEY")
+
+def get_llm(temperature: float = 0.2) -> ChatAnthropic:
+    model = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "OPENAI_API_KEY is not set. Copy .env.example to .env and add your key."
+            "ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key."
         )
-    return ChatOpenAI(model=model, temperature=temperature, api_key=api_key)
+    return ChatAnthropic(model=model, temperature=temperature, api_key=api_key)
 
 
-def invoke_structured(llm: ChatOpenAI, schema: type[T], prompt: str) -> T:
-    """Prefer native structured output; fall back to JSON parsing."""
-    try:
-        structured = llm.with_structured_output(schema)
-        result = structured.invoke(prompt)
-        if isinstance(result, schema):
-            return result
-        if isinstance(result, dict):
-            return schema.model_validate(result)
-    except Exception:
-        pass
+def coerce_to_schema(schema: type[T], payload: Any) -> T:
+    """Map Claude's alternate field names onto our Pydantic models."""
+    if isinstance(payload, schema):
+        return payload
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected a JSON object, got {type(payload).__name__}")
 
-    raw = llm.invoke(
-        prompt
-        + "\n\nRespond with ONLY valid JSON matching the required schema. No markdown."
-    )
-    content = raw.content if hasattr(raw, "content") else str(raw)
-    if isinstance(content, list):
-        content = "".join(
-            part.get("text", "") if isinstance(part, dict) else str(part)
-            for part in content
-        )
-    text = str(content).strip()
-    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
-    if not match:
-        raise ValueError(f"LLM did not return JSON: {text[:400]}")
-    data: dict[str, Any] = json.loads(match.group(0))
+    data = dict(payload)
+    fields = schema.model_fields
+
+    if "updated_cv" in fields and "updated_cv" not in data:
+        for key in _CV_ALIASES:
+            value = data.get(key)
+            if isinstance(value, str) and value.strip():
+                data["updated_cv"] = value
+                break
+
+    if "changes_made" in fields and "changes_made" not in data:
+        for key in _CHANGES_ALIASES:
+            if key in data:
+                data["changes_made"] = data[key]
+                break
+        else:
+            data["changes_made"] = []
+
+    if isinstance(data.get("changes_made"), str):
+        text = data["changes_made"].strip()
+        data["changes_made"] = [text] if text else []
+
+    if "keywords_used" in fields:
+        data.setdefault("keywords_used", [])
+    if "ai_tells_removed" in fields:
+        data.setdefault("ai_tells_removed", [])
+
     return schema.model_validate(data)
+
+
+def invoke_structured(llm: BaseChatModel, schema: type[T], prompt: str) -> T:
+    """One Anthropic request. Coerce alternate field names locally."""
+    structured = llm.with_structured_output(schema)
+    result = structured.invoke(prompt)
+    return coerce_to_schema(schema, result)

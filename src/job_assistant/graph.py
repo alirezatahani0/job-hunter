@@ -19,6 +19,7 @@ def build_graph(*, fetch_only: bool = False, until: str | None = None):
     until:
       fetch — stop after fetching
       sort  — fetch then rank against the CV
+      optimize — fetch, rank, then tailor a human/ATS-safe CV for the top job
       end   — full pipeline
     """
     if until is None:
@@ -39,10 +40,13 @@ def build_graph(*, fetch_only: bool = False, until: str | None = None):
         return graph.compile()
 
     graph.add_node("optimize_cv", optimize_cv_node)
+    graph.add_edge("sort_jobs", "optimize_cv")
+    if until == "optimize":
+        graph.add_edge("optimize_cv", END)
+        return graph.compile()
+
     graph.add_node("evaluate_cv", evaluate_cv_node)
     graph.add_node("print_output", print_output_node)
-
-    graph.add_edge("sort_jobs", "optimize_cv")
     graph.add_edge("optimize_cv", "evaluate_cv")
     graph.add_edge("evaluate_cv", "print_output")
     graph.add_edge("print_output", END)

@@ -49,7 +49,7 @@ function renderList() {
         <h2>${escapeHtml(job.title || "Untitled")}</h2>
         ${score === null ? "" : `<span class="score">${score}%</span>`}
       </div>
-      <p>${escapeHtml(job.company || "Unknown")}</p>
+      <p class="company">${escapeHtml(job.company || "Unknown")}</p>
       <p class="salary">${escapeHtml(job.salary_text || "Salary not listed")}</p>
     `;
     btn.addEventListener("click", () => selectJob(job.id));
@@ -80,7 +80,7 @@ function selectJob(id) {
   detailEl.innerHTML = `
     <p class="eyebrow">${escapeHtml(job.source || "job")}</p>
     <h1>${escapeHtml(job.title || "")}</h1>
-    <p>${escapeHtml(job.company || "")}</p>
+    <p class="detail-company">${escapeHtml(job.company || "")}</p>
     <div class="meta">
       <span class="chip match">${escapeHtml(score)}</span>
       <span class="chip">${escapeHtml(job.location_requirements || job.location || "Remote")}</span>
@@ -88,10 +88,33 @@ function selectJob(id) {
       <span class="chip">${escapeHtml(job.salary_text || "Salary not listed")}</span>
     </div>
     <div class="meta">${matched || tags}</div>
-    ${reasons ? `<ul class="description">${reasons}</ul>` : ""}
-    <div class="description">${escapeHtml(job.description || "No description.")}</div>
-    <a class="open" href="${escapeAttr(job.url || "#")}" target="_blank" rel="noreferrer">Open job posting</a>
+    ${reasons ? `<div class="block"><h2>Match notes</h2><ul class="notes">${reasons}</ul></div>` : ""}
+    <div class="block">
+      <h2>Actions</h2>
+      <div class="actions detail-actions">
+        <button id="optimize-btn" type="button">Tailor resume to this JD</button>
+        <button id="ats-btn" type="button">Check ATS</button>
+        <a class="button secondary" href="/api/resume/original">Download original Word</a>
+        <a class="button secondary" id="download-optimized" href="/api/resume/optimized" aria-disabled="true" title="Tailor this JD first to download an optimized resume">Download optimized Word</a>
+      </div>
+    </div>
+    <div id="ats-panel"></div>
+    <div id="optimized-panel"></div>
+    <div class="jd">
+      <h2>Job description</h2>
+      <div class="description">${escapeHtml(job.description || "No description.")}</div>
+      <a class="open" href="${escapeAttr(job.url || "#")}" target="_blank" rel="noreferrer">Open job posting</a>
+    </div>
   `;
+  document.getElementById("optimize-btn")?.addEventListener("click", () => tailorResume(job.id));
+  document.getElementById("ats-btn")?.addEventListener("click", () => checkAts(job.id));
+  document.getElementById("download-optimized")?.addEventListener("click", (event) => {
+    if (event.currentTarget.getAttribute("aria-disabled") === "true") {
+      event.preventDefault();
+    }
+  });
+  loadOptimizedFor(job.id);
+  loadAtsFor(job.id);
 }
 
 function escapeHtml(value) {
@@ -106,6 +129,141 @@ function escapeAttr(value) {
   return escapeHtml(value).replaceAll("'", "&#39;");
 }
 
+function setOptimizedDownloadEnabled(enabled) {
+  const link = document.getElementById("download-optimized");
+  if (!link) return;
+  link.setAttribute("aria-disabled", enabled ? "false" : "true");
+  link.title = enabled
+    ? "Download the tailored Word resume"
+    : "Tailor this JD first to download an optimized resume";
+}
+
+function optimizedMatchesJob(data, jobId) {
+  return Boolean(data?.updated_cv) && data.job?.id === jobId;
+}
+
+function renderOptimized(data) {
+  const panel = document.getElementById("optimized-panel");
+  if (!panel || !data?.updated_cv) return;
+  const changes = (data.changes_made || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  panel.innerHTML = `
+    <div class="block">
+      <h2>Tailored resume</h2>
+      ${changes ? `<ul class="notes">${changes}</ul>` : ""}
+      <pre class="resume">${escapeHtml(data.updated_cv)}</pre>
+    </div>
+  `;
+}
+
+function renderAts(data) {
+  const panel = document.getElementById("ats-panel");
+  const evaluation = data?.evaluation;
+  if (!panel || !evaluation) return;
+  const passed = Boolean(evaluation.ats_pass);
+  const source = data.cv_source === "optimized" ? "tailored resume" : "original resume";
+  const missing = (evaluation.missing_skills || [])
+    .map((skill) => `<span class="chip">${escapeHtml(skill)}</span>`)
+    .join("");
+  const notes = (evaluation.feedback || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  panel.innerHTML = `
+    <div class="ats-card ${passed ? "pass" : "fail"}">
+      <div class="ats-top">
+        <h2>ATS ${passed ? "PASS" : "FAIL"}</h2>
+        <span class="chip ${passed ? "match" : "fail"}">${Math.round(evaluation.ats_score || 0)}/100</span>
+      </div>
+      <p class="count">Checked ${escapeHtml(source)} against this JD.</p>
+      <div class="meta">
+        <span class="chip">Keywords ${Math.round(evaluation.jd_relevance || 0)}</span>
+        <span class="chip">Format ${Math.round(evaluation.format_quality || 0)}</span>
+        <span class="chip">Readability ${Math.round(evaluation.human_readability || 0)}</span>
+        <span class="chip ${evaluation.ai_detected ? "fail" : "match"}">AI flag ${evaluation.ai_detected ? "yes" : "no"}</span>
+      </div>
+      ${missing ? `<p class="count">Missing JD skills</p><div class="meta">${missing}</div>` : ""}
+      ${notes ? `<ul class="notes">${notes}</ul>` : ""}
+    </div>
+  `;
+}
+
+async function loadAtsFor(jobId) {
+  try {
+    const response = await fetch("/api/ats");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (selectedId !== jobId) return;
+    if (data?.evaluation && data.job?.id === jobId) renderAts(data);
+  } catch {
+    /* no saved ATS result yet */
+  }
+}
+
+async function checkAts(jobId) {
+  const button = document.getElementById("ats-btn");
+  if (button) button.disabled = true;
+  setStatus("Checking ATS parse and keyword match…");
+  try {
+    const response = await fetch("/api/ats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "ATS check failed");
+    renderAts(data);
+    const passed = data.evaluation?.ats_pass;
+    setStatus(
+      `ATS ${passed ? "PASS" : "FAIL"} (${Math.round(data.evaluation?.ats_score || 0)}/100) on ${
+        data.cv_source === "optimized" ? "tailored" : "original"
+      } resume`
+    );
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function loadOptimizedFor(jobId) {
+  try {
+    const response = await fetch("/api/optimized");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (selectedId !== jobId) return;
+    if (optimizedMatchesJob(data, jobId)) {
+      renderOptimized(data);
+      setOptimizedDownloadEnabled(true);
+    } else {
+      setOptimizedDownloadEnabled(false);
+    }
+  } catch {
+    setOptimizedDownloadEnabled(false);
+  }
+}
+
+async function tailorResume(jobId) {
+  const button = document.getElementById("optimize-btn");
+  if (button) button.disabled = true;
+  setStatus("Tailoring resume to this JD…");
+  try {
+    const response = await fetch("/api/optimize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Optimize failed");
+    renderOptimized(data);
+    setOptimizedDownloadEnabled(true);
+    setStatus(`Tailored resume for ${data.job?.title || "this job"}`);
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
 async function loadJobs() {
   setStatus("Loading jobs…");
   const response = await fetch("/api/jobs");

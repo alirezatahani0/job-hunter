@@ -1,7 +1,5 @@
 # Alireza Tahani
 
-**Location:** Tehran, Iran (open to remote)  
-**Phone:** 0912-621-8002  
 **Email:** alireza.tahani0@gmail.com
 
 ## Professional Summary

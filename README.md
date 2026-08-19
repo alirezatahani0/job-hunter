@@ -7,8 +7,8 @@ Python LangGraph workflow that finds a remote job, ranks it, tailors your CV to 
 ```
 START
   → fetch_jobs      # Himalayas (worldwide location + all hiring timezones)
-  → sort_jobs       # rank by title, salary, location, tags
-  → optimize_cv     # OpenAI tailored rewrite
+  → sort_jobs       # rank against CV skills + role fit
+  → optimize_cv     # JD-tailored rewrite, then humanize for ATS
   → evaluate_cv     # JD fit, readability, format, ATS, AI-detect
   → print_output    # console + output/*.md
 END
@@ -21,16 +21,18 @@ END
 source bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# edit .env and set OPENAI_API_KEY
+# edit .env and set ANTHROPIC_API_KEY
 ```
 
 ## Run (fetch + rank against CV)
 
 ```bash
 export PYTHONPATH=src
-python -m job_assistant.main --until sort --source himalayas
-python -m job_assistant.web   # http://127.0.0.1:8765
+python -m job_assistant.main --until optimize --source himalayas
+# tailored resume: output/optimized_cv.md
 ```
+
+Open a job in the UI and click **Tailor resume to this JD**.
 
 Only listings whose **Location requirements** are Worldwide / all countries **and** **Hiring timezones** are unrestricted / all timezones are kept.
 

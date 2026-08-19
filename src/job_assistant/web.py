@@ -6,13 +6,20 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
+
 from job_assistant.graph import build_graph
 from job_assistant.main import DEFAULT_CV
-from job_assistant.services.cv_loader import load_cv
+from job_assistant.nodes.optimize_cv import optimize_cv_node
+from job_assistant.services.ats_check import evaluate_ats
+from job_assistant.services.cv_docx import DOCX_CONTENT_TYPE, markdown_to_docx
+from job_assistant.services.cv_loader import load_cv, strip_private_contact
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = ROOT / "frontend"
 OUTPUT = ROOT / "output"
+OPTIMIZED_JSON = OUTPUT / "optimized.json"
+ATS_JSON = OUTPUT / "ats.json"
 JOB_FILES = (
     OUTPUT / "himalayas_jobs.json",
     OUTPUT / "jobs.json",
@@ -42,40 +49,86 @@ def load_saved_jobs() -> dict:
     }
 
 
-def fetch_jobs() -> dict:
+def load_optimized() -> dict:
+    if not OPTIMIZED_JSON.exists():
+        return {"updated_cv": "", "changes_made": [], "job": None}
+    payload = json.loads(OPTIMIZED_JSON.read_text(encoding="utf-8"))
+    if payload.get("updated_cv"):
+        payload["updated_cv"] = strip_private_contact(payload["updated_cv"])
+    return payload
+
+
+def _safe_filename(value: str, fallback: str) -> str:
+    cleaned = "".join(ch if ch.isalnum() or ch in "-_." else "-" for ch in value)
+    cleaned = cleaned.strip(".-") or fallback
+    return cleaned[:80]
+
+
+def original_resume_markdown() -> str:
+    path = ROOT / DEFAULT_CV
+    if not path.exists():
+        return ""
+    return load_cv(path)
+
+
+def optimized_resume_markdown() -> str:
+    payload = load_optimized()
+    text = (payload.get("updated_cv") or "").strip()
+    if text:
+        return text
+    path = OUTPUT / "optimized_cv.md"
+    if path.exists():
+        return strip_private_contact(path.read_text(encoding="utf-8"))
+    return ""
+
+
+def original_resume_filename() -> str:
+    return "Alireza_Tahani_CV.docx"
+
+
+def optimized_resume_filename() -> str:
+    job = load_optimized().get("job") or {}
+    company = _safe_filename(str(job.get("company") or ""), "job")
+    return f"Alireza_Tahani_CV-{company}.docx"
+
+
+def _base_state(job: dict | None = None) -> dict:
     cv_path = ROOT / DEFAULT_CV
     base_cv = load_cv(cv_path) if cv_path.exists() else " "
-    app = build_graph(until="sort")
-    result = app.invoke(
-        {
-            "preferences": {
-                "query": "react",
-                "titles": [
-                    "Senior Frontend Engineer",
-                    "Lead Frontend Engineer",
-                    "Frontend Engineer",
-                    "Senior Full-Stack Engineer",
-                    "Full-Stack Engineer",
-                ],
-                "location": "Remote",
-                "tags": ["react", "typescript", "nextjs", "frontend"],
-                "min_salary": None,
-                "max_jobs": 40,
-                "source": "himalayas",
-                "himalayas_pages": 3,
-                "worldwide_only": True,
-            },
-            "base_cv": base_cv,
+    return {
+        "preferences": {
+            "query": "react",
+            "titles": [
+                "Senior Frontend Engineer",
+                "Lead Frontend Engineer",
+                "Frontend Engineer",
+                "Senior Full-Stack Engineer",
+                "Full-Stack Engineer",
+            ],
+            "location": "Remote",
+            "tags": ["react", "typescript", "nextjs", "frontend"],
+            "min_salary": None,
             "max_jobs": 40,
-            "jobs": [],
-            "sorted_jobs": [],
-            "selected_job": None,
-            "updated_cv": "",
-            "evaluation": None,
-            "output_path": "",
-            "messages": [],
-        }
-    )
+            "source": "himalayas",
+            "himalayas_pages": 3,
+            "worldwide_only": True,
+        },
+        "base_cv": base_cv,
+        "max_jobs": 40,
+        "jobs": [],
+        "sorted_jobs": [],
+        "selected_job": job,
+        "updated_cv": "",
+        "cv_changes": [],
+        "evaluation": None,
+        "output_path": "",
+        "messages": [],
+    }
+
+
+def fetch_jobs() -> dict:
+    app = build_graph(until="sort")
+    result = app.invoke(_base_state())
     jobs = result.get("jobs") or []
     return {
         "count": len(jobs),
@@ -84,37 +137,159 @@ def fetch_jobs() -> dict:
     }
 
 
+def load_ats() -> dict:
+    if not ATS_JSON.exists():
+        return {"evaluation": None, "job": None, "cv_source": None}
+    return json.loads(ATS_JSON.read_text(encoding="utf-8"))
+
+
+def _selected_job(job_id: str | None) -> dict:
+    jobs = load_saved_jobs()["jobs"]
+    selected = jobs[0] if jobs else None
+    if job_id:
+        selected = next((job for job in jobs if job.get("id") == job_id), selected)
+    if not selected:
+        raise ValueError("No saved job. Fetch jobs first.")
+    return selected
+
+
+def resume_for_job(job: dict) -> tuple[str, str]:
+    """Prefer tailored CV for this listing; otherwise the original."""
+    payload = load_optimized()
+    tailored = (payload.get("updated_cv") or "").strip()
+    if tailored and payload.get("job", {}).get("id") == job.get("id"):
+        return tailored, "optimized"
+    original = original_resume_markdown().strip()
+    if not original:
+        raise ValueError("No resume found to check.")
+    return original, "original"
+
+
+def check_ats(job_id: str | None) -> dict:
+    selected = _selected_job(job_id)
+    cv_text, cv_source = resume_for_job(selected)
+    evaluation = evaluate_ats(cv_text, selected)
+    payload = {
+        "job": {
+            "id": selected.get("id"),
+            "title": selected.get("title"),
+            "company": selected.get("company"),
+            "url": selected.get("url"),
+        },
+        "cv_source": cv_source,
+        "evaluation": evaluation,
+    }
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    ATS_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return payload
+
+
+def optimize_job(job_id: str | None) -> dict:
+    selected = _selected_job(job_id)
+    result = optimize_cv_node(_base_state(selected))
+    return {
+        "job": {
+            "id": selected.get("id"),
+            "title": selected.get("title"),
+            "company": selected.get("company"),
+            "url": selected.get("url"),
+        },
+        "updated_cv": result.get("updated_cv") or "",
+        "changes_made": result.get("cv_changes") or [],
+        "output_path": result.get("output_path"),
+        "messages": result.get("messages") or [],
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:  # noqa: A003
         print(f"[web] {self.address_string()} {format % args}")
 
-    def _send(self, status: int, body: bytes, content_type: str) -> None:
+    def _send(
+        self,
+        status: int,
+        body: bytes,
+        content_type: str,
+        extra_headers: dict[str, str] | None = None,
+    ) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_docx(self, markdown: str, filename: str, missing: str) -> None:
+        if not markdown.strip():
+            self._send_json(404, {"error": missing})
+            return
+        self._send(
+            200,
+            markdown_to_docx(markdown),
+            DOCX_CONTENT_TYPE,
+            extra_headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
+        )
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
         self._send(status, body, "application/json; charset=utf-8")
+
+    def _read_json(self) -> dict:
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length).decode("utf-8")
+        if not raw.strip():
+            return {}
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
 
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path == "/api/jobs":
             self._send_json(200, load_saved_jobs())
             return
+        if path == "/api/optimized":
+            self._send_json(200, load_optimized())
+            return
+        if path == "/api/ats":
+            self._send_json(200, load_ats())
+            return
+        if path == "/api/resume/original":
+            self._send_docx(
+                original_resume_markdown(),
+                original_resume_filename(),
+                "Original resume not found.",
+            )
+            return
+        if path == "/api/resume/optimized":
+            self._send_docx(
+                optimized_resume_markdown(),
+                optimized_resume_filename(),
+                "No optimized resume yet. Tailor this JD first.",
+            )
+            return
         self._serve_static(path)
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
-        if path != "/api/fetch":
-            self._send_json(404, {"error": "Not found"})
-            return
         try:
-            payload = fetch_jobs()
-            self._send_json(200, payload)
+            if path == "/api/fetch":
+                self._send_json(200, fetch_jobs())
+                return
+            if path == "/api/optimize":
+                body = self._read_json()
+                self._send_json(200, optimize_job(body.get("job_id")))
+                return
+            if path == "/api/ats":
+                body = self._read_json()
+                self._send_json(200, check_ats(body.get("job_id")))
+                return
+            self._send_json(404, {"error": "Not found"})
         except Exception as exc:  # noqa: BLE001
             self._send_json(500, {"error": str(exc)})
 
@@ -132,6 +307,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main(host: str = "127.0.0.1", port: int = 8765) -> None:
+    load_dotenv(ROOT / ".env")
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"Job board UI: http://{host}:{port}", flush=True)
     server.serve_forever()

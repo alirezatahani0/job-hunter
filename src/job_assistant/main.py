@@ -82,7 +82,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--until",
-        choices=["fetch", "sort", "end"],
+        choices=["fetch", "sort", "optimize", "end"],
         default="",
         help="Stop after this node (default: end, or fetch when --fetch-only)",
     )
@@ -171,6 +171,7 @@ def main() -> int:
     flow = {
         "fetch": "Himalayas fetch → state",
         "sort": "fetch → sort against CV skills",
+        "optimize": "fetch → sort → tailor CV to JD (human/ATS-safe)",
         "end": "fetch → sort → optimize CV → evaluate → print",
     }.get(until, until)
     console.print(Panel.fit(flow, title="Job Assistant Graph"))
@@ -187,6 +188,7 @@ def main() -> int:
             "sorted_jobs": [],
             "selected_job": None,
             "updated_cv": "",
+            "cv_changes": [],
             "evaluation": None,
             "output_path": "",
             "messages": [],
@@ -205,6 +207,20 @@ def main() -> int:
             f"\n[green]{len(jobs)} jobs {label} in graph state[/green] "
             f"(and output/himalayas_jobs.json)."
         )
+        return 0
+
+    if until == "optimize":
+        job = result.get("selected_job") or {}
+        console.print(
+            f"\n[green]Tailored CV[/green] for {job.get('title')} @ {job.get('company')}"
+        )
+        for change in (result.get("cv_changes") or [])[:8]:
+            console.print(f"• {change}")
+        if result.get("output_path"):
+            console.print(f"Saved: {result['output_path']}")
+        preview = (result.get("updated_cv") or "")[:1200]
+        if preview:
+            console.print("\n" + preview)
         return 0
 
     if result.get("output_path"):
