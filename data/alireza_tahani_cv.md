@@ -1,66 +1,64 @@
 # Alireza Tahani
 
-**Email:** alireza.tahani0@gmail.com
+**Email:** alireza.tahani01@gmail.com
 
 ## Professional Summary
 
-Senior Full-Stack Engineer with 9+ years of experience delivering high-performance, enterprise-grade web applications across fintech, SaaS, and high-traffic platforms. Proven track record in optimizing front-end architectures, scaling complex React ecosystems, reducing operational overhead, and driving measurable business outcomes. Expert in JavaScript/TypeScript, React, Next.js, and Node.js. Adept at cross-team collaboration, system redesigns, and performance engineering at scale.
+Senior full-stack engineer (9+ years) shipping TypeScript, React, and Node.js in fintech and high-traffic SaaS. Strongest on structured data, schema validation, and real-time systems. Uses Cursor and Claude daily for review, refactors, and prompts. Built a LangGraph job assistant with Claude API structured outputs.
 
 ## Core Competencies
 
-- JavaScript/TypeScript, React.js, Next.js, Webpack
-- State Management: Redux, Redux-Saga, Zustand
-- Node.js, Express, API Architecture, GraphQL, Apollo Client
-- UI/UX Systems, Design Systems, Component Libraries
-- CI/CD, Git, GitHub/GitLab, DevOps Collaboration
-- System Performance Optimization, Agile, Scrum, Jira
-- HTML5, CSS3, SASS/LESS, Real-time systems (Socket.io)
-- Third-party SDK integrations (Google, Facebook, PayPal, Firebase)
+- TypeScript, JavaScript, React, Next.js, Node.js, Express
+- Structured data: Zod, schema validation, REST APIs, GraphQL
+- Claude API, Cursor, LangGraph, Pydantic structured outputs
+- State: Redux, Redux-Saga, Zustand, React Query
+- Real-time systems (Socket.io, live market data), React Query caching/retries
+- Performance (Lighthouse / Web Vitals), Docker, CI/CD, Git
+- Independent delivery across startups and freelance clients
 
 ## Experience
 
-### Lead FrontEnd Developer — Hamta, Tehran | May 2023 – Present
+### Lead FrontEnd Developer — SAP (Germany) / Identity Global (UK) | May 2023 – Present
 
-- Led and managed a cross-team group of 3 front-end developers, mentoring them on architecture, code quality, and delivery — resulting in higher output velocity and smoother inter-team coordination.
-- Served as a technical lead on the trading platform front-end, driving architecture decisions, coding standards, and performance optimization strategies.
-- Engineered high-performance spot and futures trading interfaces with 200ms live market data refresh, ensuring zero UI stalls even under heavy load.
-- Architected optimized data pipelines using Web Workers to offload computation, reducing main-thread blocking by 70% and enabling ultra-smooth chart and order-book updates.
-- Delivered 90+ Lighthouse Web Vitals across all trading pages (FCP: 0.7s, LCP: 0.9s, CLS: 0.006, Speed Index: 1.2s) — top 1% performance for real-time financial dashboards.
-- Built 30+ high-performance landing pages, fully optimized for SEO and AI indexability.
-- Architected scalable form pipelines using React Hook Form + Zod, reducing user submission errors by 40%.
-- Built resilient real-time data workflows with React Query (caching, background refresh, fault-tolerant retries).
-- Instrumented end-to-end DX improvements: strict TypeScript, modularized feature layers, shared UI primitives, reusable hooks, and API abstraction layers.
-- Implemented a fully containerized FE environment with Docker.
-- Built a scalable theming system using Tailwind and atomic component patterns that accelerated UI delivery speed by 35%.
-- Partnered with backend teams to model, test, and refine real-time trading APIs.
+- Led 3 front-end engineers on architecture, code quality, and delivery for a trading platform.
+- Technical lead on the trading UI: coding standards, architecture, and performance strategy.
+- Built spot and futures interfaces with 200ms live market data refresh and no UI stalls under load.
+- Designed client-side data pipelines with Web Workers, cutting main-thread blocking by 70% for charts and order books.
+- Shipped structured validation with React Hook Form + Zod so invalid payloads fail before they hit downstream trading systems (40% fewer submission errors).
+- Partnered with backend on real-time trading APIs: contracts, retries, caching, and fault-tolerant refresh for live financial data.
+- Delivered 90+ Lighthouse scores on trading pages (FCP 0.7s, LCP 0.9s, CLS 0.006, Speed Index 1.2s).
+- Strict TypeScript, feature modules, shared UI primitives, and API abstraction layers.
+- Containerized the front-end stack with Docker.
 
 ### FrontEnd Developer — Preezma, Yerevan | May 2021 – May 2023
 
-- Engineered high-performance React components using ES6+, Redux-Saga, and REST APIs, contributing to a 30% increase in user engagement and a 10% jump in revenue.
-- Identified and resolved major performance bottlenecks, achieving a 50% improvement in load speed.
-- Drove new feature development across 4 cross-functional teams.
-- Gathered and refined 40+ system requirements for parallel iOS/Android development.
-- Designed and delivered a fully automated CI/CD pipeline for mobile releases, reducing deployment time by 5×.
-- Implemented TDD with Jest and Enzyme, reaching 95% test coverage across core modules.
+- Built React + Redux-Saga + REST features that lifted engagement 30% and revenue 10%.
+- Cut load time ~50% by removing performance bottlenecks.
+- Shipped work across 4 product teams; refined 40+ requirements for parallel iOS/Android.
+- Automated mobile CI/CD, cutting release time 5×.
+- TDD with Jest and Enzyme; ~95% coverage on core modules.
 
-### FrontEnd Developer — IranTalent, Tehran | May 2020 – May 2021
+### FrontEnd Developer — Fixefy.io | May 2020 – May 2021
 
-- Built a robust shared UI component layer, cutting development time by 40% and standardizing the product’s design language.
-- Collaborated with backend teams to synchronize front-end and server logic, resulting in a 20% reduction in API response time.
-- Executed features on aggressive timelines, delivering 95% on-time completion.
-- Reworked data-heavy rendering logic, reducing HTTP requests by 80% and elevating UI responsiveness.
-- Utilized React, Redux, Router, animations, and enterprise-level architecture principles.
-- Championed Agile methodologies using Jira to improve sprint predictability.
+- Shared UI component layer that cut build time 40% and aligned the design language.
+- Worked with backend on front-end/server contracts; API response time dropped ~20%.
+- 95% on-time feature delivery on tight timelines.
+- Reworked data-heavy views, cutting HTTP requests 80%.
+- React, Redux, Router; Jira-based sprint planning.
 
 ### FrontEnd Developer — Multiple Startups & Enterprise Clients, Tehran | 2016 – 2021
 
-- Rebuilt onboarding tours and product walkthroughs using React, increasing customer feature adoption by 25%.
-- Delivered cross-browser compatible interfaces using React, Next.js, Redux, and modern CSS.
-- Translated UI/UX wireframes into robust front-end architecture for 30+ commercial clients.
-- Worked within an Agile team of 10 engineers to ship end-to-end product features.
-- Contributed to modernization efforts for 30+ enterprise web properties.
-- Built custom map integrations with Google APIs for IoT device visualization.
-- Developed a custom UI/UX library (Accordions, Filters, Dropdowns, Carousels, Buttons, Checkboxes, Inputs, Icons).
-- Implemented Redux-Saga, ImmutableJS, and middleware strategies for scalable state management.
-- Used Webpack extensively to build micro-frontends, component libraries, and CI/CD pipelines with Jenkins.
-- Ensured SEO and ADA compliance through semantic HTML and accessibility-first component design.
+- End-to-end product work in an Agile team of 10; 30+ commercial front-ends.
+- React, Next.js, Redux, Webpack micro-frontends, Jenkins CI/CD.
+- Custom UI library and Google Maps / IoT visualizations.
+- Semantic HTML and accessibility (ADA-oriented) on client sites.
+
+## Relevant Projects
+
+### Job Assistant — personal, 2026
+
+GitHub: https://github.com/alirezatahani0/job-hunter
+
+- LangGraph pipeline: fetch remote jobs, rank against a CV, tailor a resume with **one Claude API call**, local ATS keyword/format check, Word export.
+- Production-style LLM wiring: Anthropic Claude (Haiku), structured JSON → Pydantic models, schema coercion when the model uses alternate field names, fail-closed validation.
+- Stack: Python, LangGraph, Claude API, vanilla JS UI.

@@ -4,9 +4,20 @@ const searchEl = document.getElementById("search");
 const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
 const refreshBtn = document.getElementById("refresh-btn");
+const reportEl = document.getElementById("run-report-text");
 
 let jobs = [];
 let selectedId = null;
+let applicationsById = new Map();
+
+function applicationStatus(job) {
+  if (!job) return "";
+  if (job.applied || job.application_status === "submitted") return "submitted";
+  const record = applicationsById.get(job.id);
+  if (record?.status === "submitted" || record?.submitted === true) return "submitted";
+  if (record || job.application_status === "ready") return "ready";
+  return "";
+}
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -41,9 +52,11 @@ function renderList() {
 
   visible.forEach((job) => {
     const btn = document.createElement("button");
-    btn.className = `job-card${job.id === selectedId ? " active" : ""}`;
+    const state = applicationStatus(job);
+    btn.className = `job-card${job.id === selectedId ? " active" : ""}${state ? " applied" : ""}`;
     btn.type = "button";
     const score = typeof job.score === "number" ? Math.round(job.score * 100) : null;
+    const applied = applicationStatus(job);
     btn.innerHTML = `
       <div class="card-top">
         <h2>${escapeHtml(job.title || "Untitled")}</h2>
@@ -51,6 +64,8 @@ function renderList() {
       </div>
       <p class="company">${escapeHtml(job.company || "Unknown")}</p>
       <p class="salary">${escapeHtml(job.salary_text || "Salary not listed")}</p>
+      ${applied === "submitted" ? `<span class="chip applied">Submitted</span>` : ""}
+      ${applied === "ready" ? `<span class="chip match">Ready</span>` : ""}
     `;
     btn.addEventListener("click", () => selectJob(job.id));
     listEl.appendChild(btn);
@@ -74,6 +89,7 @@ function selectJob(id) {
   const reasons = (job.score_breakdown?.reasons || [])
     .map((note) => `<li>${escapeHtml(note)}</li>`)
     .join("");
+  const applied = applicationStatus(job);
   const score = typeof job.score === "number" ? `${Math.round(job.score * 100)}% CV match` : "Unranked";
 
   detailEl.classList.remove("empty");
@@ -86,6 +102,8 @@ function selectJob(id) {
       <span class="chip">${escapeHtml(job.location_requirements || job.location || "Remote")}</span>
       <span class="chip">${escapeHtml(job.hiring_timezones || "Timezones n/a")}</span>
       <span class="chip">${escapeHtml(job.salary_text || "Salary not listed")}</span>
+      ${applied === "submitted" ? `<span class="chip applied">Submitted</span>` : ""}
+      ${applied === "ready" ? `<span class="chip match">Ready</span>` : ""}
     </div>
     <div class="meta">${matched || tags}</div>
     ${reasons ? `<div class="block"><h2>Match notes</h2><ul class="notes">${reasons}</ul></div>` : ""}
@@ -94,11 +112,14 @@ function selectJob(id) {
       <div class="actions detail-actions">
         <button id="optimize-btn" type="button">Tailor resume to this JD</button>
         <button id="ats-btn" type="button">Check ATS</button>
+        <button id="cover-btn" type="button">Write cover letter</button>
+        <button id="apply-btn" type="button">${applied === "submitted" ? "Submitted" : applied === "ready" ? "Update packet" : "Apply"}</button>
         <a class="button secondary" href="/api/resume/original">Download original Word</a>
         <a class="button secondary" id="download-optimized" href="/api/resume/optimized" aria-disabled="true" title="Tailor this JD first to download an optimized resume">Download optimized Word</a>
       </div>
     </div>
     <div id="ats-panel"></div>
+    <div id="apply-panel"></div>
     <div id="optimized-panel"></div>
     <div class="jd">
       <h2>Job description</h2>
@@ -108,6 +129,8 @@ function selectJob(id) {
   `;
   document.getElementById("optimize-btn")?.addEventListener("click", () => tailorResume(job.id));
   document.getElementById("ats-btn")?.addEventListener("click", () => checkAts(job.id));
+  document.getElementById("cover-btn")?.addEventListener("click", () => writeCoverLetter(job.id));
+  document.getElementById("apply-btn")?.addEventListener("click", () => applyToJob(job.id));
   document.getElementById("download-optimized")?.addEventListener("click", (event) => {
     if (event.currentTarget.getAttribute("aria-disabled") === "true") {
       event.preventDefault();
@@ -115,6 +138,7 @@ function selectJob(id) {
   });
   loadOptimizedFor(job.id);
   loadAtsFor(job.id);
+  loadCoverFor(job.id);
 }
 
 function escapeHtml(value) {
@@ -155,6 +179,23 @@ function renderOptimized(data) {
       <pre class="resume">${escapeHtml(data.updated_cv)}</pre>
     </div>
   `;
+}
+
+async function loadOptimizedFor(jobId) {
+  try {
+    const response = await fetch("/api/optimized");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (selectedId !== jobId) return;
+    if (optimizedMatchesJob(data, jobId)) {
+      renderOptimized(data);
+      setOptimizedDownloadEnabled(true);
+    } else {
+      setOptimizedDownloadEnabled(false);
+    }
+  } catch {
+    setOptimizedDownloadEnabled(false);
+  }
 }
 
 function renderAts(data) {
@@ -226,20 +267,105 @@ async function checkAts(jobId) {
   }
 }
 
-async function loadOptimizedFor(jobId) {
+function renderApply(data) {
+  const panel = document.getElementById("apply-panel");
+  if (!panel || !data?.cover_letter) return;
+  const jobId = data.job?.id || selectedId;
+  const submitted = data.status === "submitted" || data.submitted === true;
+  const points = (data.points_used || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  panel.innerHTML = `
+    <div class="ats-card ${submitted ? "pass" : ""}">
+      <div class="ats-top">
+        <h2>${submitted ? "Application submitted" : "Remote application packet"}</h2>
+        <span class="chip ${submitted ? "applied" : "match"}">${submitted ? "Submitted" : "Ready"}</span>
+      </div>
+      <p class="count">${
+        submitted
+          ? "This application was submitted."
+          : "Cover letter and resume are saved. The employer form is not submitted. Remote roles only."
+      }</p>
+      ${points ? `<ul class="notes">${points}</ul>` : ""}
+      <div class="actions detail-actions">
+        <a class="button secondary" href="/api/cover/letter?job_id=${encodeURIComponent(jobId)}">Download cover letter</a>
+        <a class="button secondary" href="${escapeAttr(data.apply_url || data.url || "#")}" target="_blank" rel="noreferrer">Open posting</a>
+      </div>
+      <pre class="resume">${escapeHtml(data.cover_letter)}</pre>
+    </div>
+  `;
+}
+
+async function loadCoverFor(jobId) {
   try {
-    const response = await fetch("/api/optimized");
-    if (!response.ok) return;
-    const data = await response.json();
-    if (selectedId !== jobId) return;
-    if (optimizedMatchesJob(data, jobId)) {
-      renderOptimized(data);
-      setOptimizedDownloadEnabled(true);
-    } else {
-      setOptimizedDownloadEnabled(false);
+    const [coverRes, appsRes] = await Promise.all([
+      fetch(`/api/cover?job_id=${encodeURIComponent(jobId)}`),
+      fetch("/api/applications"),
+    ]);
+    let applications = [];
+    if (appsRes.ok) {
+      applications = (await appsRes.json()).applications || [];
+      applicationsById = new Map(applications.filter((item) => item.job_id).map((item) => [item.job_id, item]));
     }
+    if (selectedId !== jobId) return;
+    if (coverRes.ok) {
+      renderApply(await coverRes.json());
+      return;
+    }
+    const record = applications.find((item) => item.job_id === jobId);
+    if (record) renderApply({ ...record, job: { id: jobId } });
   } catch {
-    setOptimizedDownloadEnabled(false);
+    /* none yet */
+  }
+}
+
+async function writeCoverLetter(jobId) {
+  const button = document.getElementById("cover-btn");
+  if (button) button.disabled = true;
+  setStatus("Writing cover letter with Claude…");
+  try {
+    const response = await fetch("/api/cover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Cover letter failed");
+    renderApply(data);
+    setStatus(`Cover letter ready for ${data.job?.title || "this job"}`);
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function applyToJob(jobId) {
+  const button = document.getElementById("apply-btn");
+  if (button) button.disabled = true;
+  setStatus("Preparing the remote application…");
+  try {
+    const response = await fetch("/api/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Apply failed");
+    applicationsById.set(jobId, data);
+    const job = jobs.find((item) => item.id === jobId);
+    if (job) job.application_status = data.submitted ? "submitted" : "ready";
+    renderApply(data);
+    renderList();
+    setStatus(
+      data.submitted
+        ? `Submitted ${data.job?.title || "this job"}`
+        : `Packet ready for ${data.job?.title || "this remote job"}. Employer form is not submitted.`
+    );
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -264,12 +390,46 @@ async function tailorResume(jobId) {
     if (button) button.disabled = false;
   }
 }
+async function loadVersion() {
+  const versionEl = document.getElementById("app-version");
+  if (!versionEl) return;
+  try {
+    const response = await fetch("/api/version");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data.version) versionEl.textContent = `v${data.version}`;
+  } catch {
+    /* The page already shows the version baked into the HTML. */
+  }
+}
+
+async function loadReport() {
+  if (!reportEl) return;
+  try {
+    const response = await fetch("/api/report");
+    if (!response.ok) return;
+    const data = await response.json();
+    reportEl.textContent = (data.text || "").trim() || "No run report yet.";
+  } catch {
+    reportEl.textContent = "No run report yet.";
+  }
+}
+
 async function loadJobs() {
   setStatus("Loading jobs…");
-  const response = await fetch("/api/jobs");
-  if (!response.ok) throw new Error("Could not load jobs");
-  const data = await response.json();
+  const [jobsRes, appsRes] = await Promise.all([
+    fetch("/api/jobs"),
+    fetch("/api/applications"),
+  ]);
+  if (!jobsRes.ok) throw new Error("Could not load jobs");
+  const data = await jobsRes.json();
   jobs = data.jobs || [];
+  if (appsRes.ok) {
+    const apps = await appsRes.json();
+    applicationsById = new Map(
+      (apps.applications || []).filter((item) => item.job_id).map((item) => [item.job_id, item])
+    );
+  }
   setStatus(`${jobs.length} saved jobs`);
   if (!selectedId && jobs[0]) selectedId = jobs[0].id;
   renderList();
@@ -298,4 +458,6 @@ async function refreshJobs() {
 searchEl.addEventListener("input", renderList);
 refreshBtn.addEventListener("click", refreshJobs);
 
+loadVersion();
+loadReport();
 loadJobs().catch((error) => setStatus(error.message));

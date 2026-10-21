@@ -42,7 +42,9 @@ _PRIVATE_CONTACT_LINE = re.compile(
     r"^\s*(?:\*\*)?(?:Location|Phone|Mobile|Tel(?:ephone)?|Cell)(?:\*\*)?\s*:.*$",
     re.I,
 )
-_PRIVATE_PHONE = re.compile(r"0?912[\s.-]*621[\s.-]*8002")
+_PRIVATE_PHONE = re.compile(
+    r"(?:0?912[\s.-]*621[\s.-]*8002|\+372[\s.-]*5605[\s.-]*7387)"
+)
 _INLINE_LOCATION = re.compile(r"\s*\|\s*\*\*Location:\*\*[^|]*", re.I)
 _INLINE_PHONE = re.compile(r"\s*\|\s*\*\*Phone:\*\*[^|]*", re.I)
 

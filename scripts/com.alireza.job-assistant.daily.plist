@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.alireza.job-assistant.daily</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/alireza/Projects/job-assistant</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/alireza/Projects/job-assistant/bin/python</string>
+    <string>-m</string>
+    <string>job_assistant.main</string>
+    <string>--until</string>
+    <string>daily</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>src</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>10</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key>
+      <integer>15</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>/Users/alireza/Projects/job-assistant/output/daily.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/alireza/Projects/job-assistant/output/daily.err</string>
+</dict>
+</plist>

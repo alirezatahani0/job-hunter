@@ -13,6 +13,124 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-21 — Version every change and push it
+
+Choice: `VERSION` is the app version. Each finished change bumps it, commits, tags `vX.Y.Z`, and pushes to origin. The current snapshot is v0.4.0. Earlier commits are tagged v0.1.0, v0.2.0, and v0.3.0. `.env` and PDFs stay untracked.
+
+Why: A later request to undo a change needs a named version, not a guess about which commit that was.
+
+---
+
+## 2026-10-21 — Apply to every good match
+
+Choice: A daily run scores every listing it fetched. A good match is a score above 50%. Every new good match is added and the apply step runs for each of them. US-only, country-locked, non-remote, and non-frontend roles stay off the board, as do URLs already on the board. One role per company. The same run writes `output/reports/latest.md`, and the local UI shows that file.
+
+Why: The five-card cap and the top-40 ranking cutoff were dropping roles that had already been found and scored well.
+
+Rejected: Keeping a daily maximum.
+
+---
+
+## 2026-10-21 — Run the job every day at 10:00 and 15:00 London
+
+Choice: `--until daily` fetches remote frontend and full-stack roles, adds every new match above 50%, tailors and submits the ones it can, then reads mail. launchd starts that command every day at 10:00 and 15:00. The Mac clock is Europe/London, so those hours are London time. Newsletters are ignored. A rejection moves the matching card to Rejected. An interview invite gets a short reply. A real question is left on the card as Needs you until it can be answered from the facts already given. The scheduled mail step waits until Gmail client credentials are stored in `.env`, because the chat Gmail sign-in cannot run from launchd.
+
+Why: The search, the applications, and the inbox should happen twice a day without a manual start, including weekends. The Mac has to be awake.
+
+Rejected: A Cursor cloud automation. The Trello token, the resume, and the Chrome apply session live on this Mac.
+
+---
+
+## 2026-10-19 — Submit the employer form, then move the card
+
+Choice: `--until submit` opens the employer form for each Tailored card. Dover gets the name, email, phone, LinkedIn, a text PDF of the Word resume, and the cover letter. Recruitee also selects Sofia, Bulgaria and attaches the cover letter file. The card moves to Applied only after the site accepts the form. A captcha that does not finish leaves the card in Tailored and names that step. A site that requires a new account moves the card to Needs you.
+
+Why: A saved resume and letter are not an application. Himalayas postings redirect to Dover or Recruitee, and those forms can be sent.
+
+Rejected: Marking Applied when the form was only prepared.
+
+---
+
+## 2026-10-19 — Phone is a form answer, and cover letters are Word files
+
+Choice: `+372 5605 7387` is stored as `APPLICANT_PHONE` and copied onto an application record as `form_phone`. Resume text and cover letters omit it. Cover letters are saved as `output/cover_<company>.docx`.
+
+Why: Employer forms ask for a phone number. The resume and the letter should not carry it.
+
+---
+
+## 2026-10-19 — Found cards get a tailored resume, then an apply packet
+
+Choice: `--until advance` tailors the resume, writes the Word cover letter, and attaches both. If the employer form is not submitted, the card stays in Tailored and the comment names that failed step. A tailor or file failure moves the card to Needs you. Applied is only for a form that was actually sent.
+
+Why: A ready packet is not an application. The board should show the last step that finished.
+
+---
+
+## 2026-10-19 — First board run adds the top five matches to Found
+
+Choice: `python -m job_assistant.main --until board` fetches, ranks against the CV, and creates up to five new Trello cards in Found. Crypto-paid roles rank above closer matches. One role per company. US-only roles, country-locked or city-locked roles, non-remote roles, designer titles, and titles outside frontend/full-stack are left off the board. Worldwide and Europe-open roles stay eligible. A URL already on the board is not added again.
+
+Why: The board exists, and the first useful step is filling Found from the current remote search.
+
+---
+
+## 2026-10-19 — Track each application on a Trello board
+
+Choice: A private Trello board named Job Search is the pipeline. Columns, left to right: Needs you, Found, Tailored, Applied, Replied, Interview, Rejected. `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_BOARD_ID`, and `TRELLO_LISTS` live in `.env`.
+
+Why: Each step needs its own column, and anything unclear needs a place you can see. Trello lists are those columns. Jira rejected the API token on a new site.
+
+Rejected: Jira Cloud for the same board.
+
+---
+
+## 2026-10-19 — Apply only remote jobs, and do not mark a packet as sent
+
+Choice: Fetch and the job board keep fully remote roles. Hybrid and on-site listings are dropped. Apply refuses a non-remote job. A saved letter and Word resume are status `ready`, not submitted. The UI chip says Ready. Submitted is reserved for a completed employer form.
+
+Why: Office roles were reachable from the same list, and Apply stamped Applied after only writing a local file.
+
+Rejected: Treating “remote” in a hybrid title as eligible.
+
+---
+
+## 2026-10-19 — Apply across Glassdoor and the other boards
+
+Choice: Default source is `boards`. One fetch merges Himalayas (worldwide), Wellfound, Remote OK, Remotive, and Glassdoor remote jobs from the last day. A blocked Glassdoor response does not fail the other boards. Rank still uses the CV, then the top matches get a cover letter and an apply packet.
+
+Why: Applications should start from the current remote listings, not only Himalayas. Glassdoor has no public jobs API.
+
+Rejected: Stopping the whole fetch when Glassdoor returns a bot check. Auto-submitting employer forms.
+
+---
+
+## 2026-08-19 — Cover letter is its own Claude node
+
+Choice: `write_cover_letter` is a graph node (and `POST /api/cover`). One Haiku structured call from the CV + JD. `apply_job` only records the letter and opens the posting. No template letter.
+
+Why: Apply was a static paragraph. A dedicated node matches optimize (opt-in LLM, truthful, per listing) and can stop at `--until cover`.
+
+Rejected: Keeping the hardcoded apply_job template as the writer.
+
+---
+
+## 2026-08-19 — Apply node opens the posting; does not auto-submit
+
+Choice: `apply_job` records the Claude cover letter, writes `output/applications.json`, and the UI opens the listing URL. You still paste/upload the Word CV on the employer site.
+
+Why: Himalayas/Greenhouse have no public apply API. Auto-filling third-party forms is brittle and the wrong layer for this tool.
+
+Rejected: Headless browser submit.
+
+## 2026-08-19 — CV: Option A only, LLM via Job Assistant
+
+Choice: Rewrite `data/alireza_tahani_cv.md` with truthful structured-data bullets, Cursor/Claude as daily tools, and a Relevant Projects entry for this LangGraph + Claude API app. Current employers on the CV: SAP (Germany) / Identity Global (UK); Fixefy.io (not IranTalent).
+
+Why: The RCM JD needs LLM keywords. Inventing production LLM, HIPAA, or MySQL/Redis at SAP / Identity Global would fail an interview.
+
+Rejected: Option B production-LLM bullets under a trading-platform role; healthcare-claims similes.
+
 ## 2026-08-19 — Cheap Haiku, one tailor request
 
 Choice: Default `ANTHROPIC_MODEL=claude-haiku-4-5`. Optimize is a single structured call (tailor + human voice). Leftover clichés are stripped locally. No second humanize request.
@@ -31,7 +149,7 @@ Rejected: Keeping OpenAI as the optimize backend.
 
 Choice: Contact header is email only. Strip location/phone from the source CV, Word downloads, and any tailored output.
 
-Why: Keep Tehran/phone off applications. Employer cities in experience (e.g. Hamta, Tehran) stay.
+Why: Keep Tehran/phone off applications. Employer cities in experience stay only where they belong.
 
 ## 2026-08-18 — Local ATS check in the UI (no OpenAI)
 

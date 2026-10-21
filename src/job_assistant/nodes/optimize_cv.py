@@ -105,18 +105,10 @@ def _persist(job: dict, updated_cv: str, changes: list[str], keywords: list[str]
     return {"md": str(md_path), "json": str(json_path), "cv": cleaned}
 
 
-def optimize_cv_node(state: JobAssistantState) -> dict:
-    job = state.get("selected_job")
-    base_cv = state.get("base_cv") or ""
-    if not job:
-        return {
-            "updated_cv": strip_private_contact(base_cv),
-            "cv_changes": [],
-            "messages": [*state.get("messages", []), "Skipped CV optimize: no selected job."],
-        }
+def tailor_resume(job: dict, base_cv: str) -> dict:
+    """Rewrite the CV for one job. Does not invent experience."""
     if not base_cv.strip():
         raise ValueError("base_cv is empty; provide a CV via CV_PATH or --cv")
-
     profile = extract_cv_profile(base_cv)
     jd_skills = skills_in_text(
         " ".join(
@@ -130,7 +122,6 @@ def optimize_cv_node(state: JobAssistantState) -> dict:
     matched = job.get("matched_skills") or [
         skill for skill in profile.skills if skill in jd_skills
     ]
-
     llm = get_llm(temperature=0.35)
     prompt = OPTIMIZE_PROMPT.format(
         allowed_skills=", ".join(profile.skills) or "use only skills present in the original CV",
@@ -146,17 +137,36 @@ def optimize_cv_node(state: JobAssistantState) -> dict:
     draft = _strip_ai_tells(tailored.updated_cv.strip())
     changes = list(tailored.changes_made or [])
     keywords = list(tailored.keywords_used or [])
-
     paths = _persist(job, draft, changes, keywords)
-    change_preview = "; ".join(changes[:5]) if changes else "n/a"
-    msg = (
-        f"Optimized CV for {job['title']} @ {job['company']} "
-        f"(JD skills used: {', '.join(matched[:8]) or 'n/a'}). "
-        f"Changes: {change_preview}. Saved {paths['md']}"
-    )
     return {
         "updated_cv": paths["cv"],
         "cv_changes": changes,
         "output_path": paths["md"],
+        "matched_skills": matched,
+    }
+
+
+def optimize_cv_node(state: JobAssistantState) -> dict:
+    job = state.get("selected_job")
+    base_cv = state.get("base_cv") or ""
+    if not job:
+        return {
+            "updated_cv": strip_private_contact(base_cv),
+            "cv_changes": [],
+            "messages": [*state.get("messages", []), "Skipped CV optimize: no selected job."],
+        }
+    tailored = tailor_resume(job, base_cv)
+    changes = list(tailored.get("cv_changes") or [])
+    matched = list(tailored.get("matched_skills") or [])
+    change_preview = "; ".join(changes[:5]) if changes else "n/a"
+    msg = (
+        f"Optimized CV for {job['title']} @ {job['company']} "
+        f"(JD skills used: {', '.join(matched[:8]) or 'n/a'}). "
+        f"Changes: {change_preview}. Saved {tailored.get('output_path')}"
+    )
+    return {
+        "updated_cv": tailored["updated_cv"],
+        "cv_changes": changes,
+        "output_path": tailored.get("output_path") or "",
         "messages": [*state.get("messages", []), msg],
     }

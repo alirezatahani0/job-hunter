@@ -6,10 +6,12 @@ Python LangGraph workflow that finds a remote job, ranks it, tailors your CV to 
 
 ```
 START
-  → fetch_jobs      # Himalayas (worldwide location + all hiring timezones)
+  → fetch_jobs      # boards: Glassdoor + Himalayas + Wellfound + Remote OK + Remotive
   → sort_jobs       # rank against CV skills + role fit
   → optimize_cv     # JD-tailored rewrite, then humanize for ATS
-  → evaluate_cv     # JD fit, readability, format, ATS, AI-detect
+  → evaluate_cv     # local ATS / keyword check
+  → write_cover_letter  # Claude letter from CV + JD
+  → apply_job       # save packet + apply URL (you submit)
   → print_output    # console + output/*.md
 END
 ```
@@ -28,11 +30,11 @@ cp .env.example .env
 
 ```bash
 export PYTHONPATH=src
-python -m job_assistant.main --until optimize --source himalayas
+python -m job_assistant.main --until sort --source boards
 # tailored resume: output/optimized_cv.md
 ```
 
-Open a job in the UI and click **Tailor resume to this JD**.
+Open a job in the UI and click **Tailor resume to this JD** or **Write cover letter**.
 
 Only listings whose **Location requirements** are Worldwide / all countries **and** **Hiring timezones** are unrestricted / all timezones are kept.
 
@@ -56,6 +58,6 @@ Reads `output/himalayas_jobs.json` and can refresh from Himalayas in the UI.
 
 ## Notes
 
-- Default `--source himalayas` uses the [Himalayas Jobs API](https://himalayas.app/docs/remote-jobs-api) and keeps only worldwide / all-timezone roles.
+- Default `--source boards` pulls Glassdoor (last day, remote), Himalayas worldwide roles, Wellfound, Remote OK, and Remotive, then ranks them against the CV.
 - Link back / attribute the boards if you redistribute listings (their API ToS).
 - Outputs land in `output/application_*.md` with JD URL + evaluation + updated resume.

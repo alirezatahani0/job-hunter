@@ -4,18 +4,22 @@ import json
 import mimetypes
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from dotenv import load_dotenv
 
 from job_assistant.graph import build_graph
 from job_assistant.main import DEFAULT_CV
+from job_assistant.nodes.apply_job import application_for, apply_to_job, load_applications
+from job_assistant.nodes.write_cover_letter import cover_for, write_cover_letter_node
 from job_assistant.nodes.optimize_cv import optimize_cv_node
 from job_assistant.services.ats_check import evaluate_ats
 from job_assistant.services.cv_docx import DOCX_CONTENT_TYPE, markdown_to_docx
 from job_assistant.services.cv_loader import load_cv, strip_private_contact
+from job_assistant.services.remote import is_remote_job
 
 ROOT = Path(__file__).resolve().parents[2]
+VERSION_FILE = ROOT / "VERSION"
 FRONTEND = ROOT / "frontend"
 OUTPUT = ROOT / "output"
 OPTIMIZED_JSON = OUTPUT / "optimized.json"
@@ -24,6 +28,7 @@ JOB_FILES = (
     OUTPUT / "himalayas_jobs.json",
     OUTPUT / "jobs.json",
     OUTPUT / "wellfound_jobs.json",
+    OUTPUT / "glassdoor_jobs.json",
 )
 
 
@@ -42,9 +47,22 @@ def load_saved_jobs() -> dict:
     jobs = payload.get("jobs") if isinstance(payload, dict) else payload
     if not isinstance(jobs, list):
         jobs = []
+    applied = {item.get("job_id"): item for item in load_applications()}
+    tagged = []
+    for job in jobs:
+        if not is_remote_job(job):
+            continue
+        row = dict(job)
+        record = applied.get(row.get("id"))
+        if record:
+            submitted = record.get("status") == "submitted" or record.get("submitted") is True
+            row["applied"] = submitted
+            row["application_status"] = "submitted" if submitted else "ready"
+            row["applied_at"] = record.get("applied_at") or record.get("prepared_at")
+        tagged.append(row)
     return {
-        "count": len(jobs),
-        "jobs": jobs,
+        "count": len(tagged),
+        "jobs": tagged,
         "source_file": str(path.relative_to(ROOT)),
     }
 
@@ -109,7 +127,7 @@ def _base_state(job: dict | None = None) -> dict:
             "tags": ["react", "typescript", "nextjs", "frontend"],
             "min_salary": None,
             "max_jobs": 40,
-            "source": "himalayas",
+            "source": "boards",
             "himalayas_pages": 3,
             "worldwide_only": True,
         },
@@ -121,6 +139,8 @@ def _base_state(job: dict | None = None) -> dict:
         "updated_cv": "",
         "cv_changes": [],
         "evaluation": None,
+        "cover_letter": "",
+        "application_path": "",
         "output_path": "",
         "messages": [],
     }
@@ -182,6 +202,59 @@ def check_ats(job_id: str | None) -> dict:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     ATS_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload
+
+
+def write_cover(job_id: str | None) -> dict:
+    selected = _selected_job(job_id)
+    cv_text, cv_source = resume_for_job(selected)
+    state = _base_state(selected)
+    if cv_source == "optimized":
+        state["updated_cv"] = cv_text
+    result = write_cover_letter_node(state)
+    letter = result.get("cover_letter") or ""
+    if not letter:
+        raise ValueError("; ".join(result.get("messages") or ["Cover letter failed."]))
+    return {
+        "job": {
+            "id": selected.get("id"),
+            "title": selected.get("title"),
+            "company": selected.get("company"),
+            "url": selected.get("url"),
+        },
+        "cv_source": cv_source,
+        "cover_letter": letter,
+        "cover_path": result.get("application_path"),
+        "messages": result.get("messages") or [],
+    }
+
+
+def apply_job(job_id: str | None) -> dict:
+    selected = _selected_job(job_id)
+    cv_text, cv_source = resume_for_job(selected)
+    existing = cover_for(selected.get("id"))
+    saved = apply_to_job(
+        selected,
+        matched=list(selected.get("matched_skills") or []),
+        cv_source=cv_source,
+        cover_letter=(existing or {}).get("cover_letter") or "",
+        cv_text=cv_text,
+    )
+    return {
+        "job": {
+            "id": selected.get("id"),
+            "title": selected.get("title"),
+            "company": selected.get("company"),
+            "url": selected.get("url"),
+        },
+        "apply_url": saved.get("url"),
+        "cv_source": saved.get("cv_source"),
+        "cover_letter": saved.get("cover_letter"),
+        "status": saved.get("status") or "ready",
+        "submitted": bool(saved.get("submitted")),
+        "prepared_at": saved.get("prepared_at"),
+        "cover_path": saved.get("cover_path"),
+        "resume_path": saved.get("resume_path"),
+    }
 
 
 def optimize_job(job_id: str | None) -> dict:
@@ -249,15 +322,60 @@ class Handler(BaseHTTPRequestHandler):
         return data if isinstance(data, dict) else {}
 
     def do_GET(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
         if path == "/api/jobs":
             self._send_json(200, load_saved_jobs())
+            return
+        if path == "/api/version":
+            version = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.exists() else ""
+            self._send_json(200, {"version": version})
+            return
+        if path == "/api/report":
+            report = OUTPUT / "reports" / "latest.md"
+            text = report.read_text(encoding="utf-8") if report.exists() else ""
+            self._send_json(200, {"text": text})
             return
         if path == "/api/optimized":
             self._send_json(200, load_optimized())
             return
         if path == "/api/ats":
             self._send_json(200, load_ats())
+            return
+        if path == "/api/applications":
+            self._send_json(200, {"applications": load_applications()})
+            return
+        if path == "/api/cover":
+            job_id = (query.get("job_id") or [None])[0]
+            record = cover_for(job_id) or application_for(job_id)
+            if not record or not record.get("cover_letter"):
+                self._send_json(404, {"error": "No cover letter for this job yet."})
+                return
+            self._send_json(200, {**record, "job": {"id": job_id}})
+            return
+        if path in {"/api/apply/letter", "/api/cover/letter"}:
+            job_id = (query.get("job_id") or [None])[0]
+            record = cover_for(job_id) or application_for(job_id)
+            if not record or not record.get("cover_letter"):
+                self._send_json(404, {"error": "No cover letter. Write one first."})
+                return
+            company = _safe_filename(str(record.get("company") or "job"), "job")
+            cover_path = record.get("cover_path") or ""
+            if str(cover_path).endswith(".docx") and Path(cover_path).is_file():
+                body = Path(cover_path).read_bytes()
+            else:
+                from job_assistant.nodes.write_cover_letter import letter_to_docx
+
+                body = letter_to_docx(str(record["cover_letter"]))
+            self._send(
+                200,
+                body,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                extra_headers={
+                    "Content-Disposition": f'attachment; filename="cover-{company}.docx"',
+                },
+            )
             return
         if path == "/api/resume/original":
             self._send_docx(
@@ -285,9 +403,17 @@ class Handler(BaseHTTPRequestHandler):
                 body = self._read_json()
                 self._send_json(200, optimize_job(body.get("job_id")))
                 return
+            if path == "/api/cover":
+                body = self._read_json()
+                self._send_json(200, write_cover(body.get("job_id")))
+                return
             if path == "/api/ats":
                 body = self._read_json()
                 self._send_json(200, check_ats(body.get("job_id")))
+                return
+            if path == "/api/apply":
+                body = self._read_json()
+                self._send_json(200, apply_job(body.get("job_id")))
                 return
             self._send_json(404, {"error": "Not found"})
         except Exception as exc:  # noqa: BLE001

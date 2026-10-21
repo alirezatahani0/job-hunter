@@ -59,9 +59,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-jobs", type=int, default=40, help="Max jobs to consider")
     parser.add_argument(
         "--source",
-        choices=["himalayas", "wellfound", "auto", "remoteok", "remotive"],
-        default="himalayas",
-        help="Job source (default: himalayas)",
+        choices=["boards", "himalayas", "glassdoor", "wellfound", "auto", "remoteok", "remotive"],
+        default="boards",
+        help="Job source (default: boards = Glassdoor + Himalayas + Wellfound + Remote OK + Remotive)",
     )
     parser.add_argument(
         "--himalayas-pages",
@@ -82,7 +82,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--until",
-        choices=["fetch", "sort", "optimize", "end"],
+        choices=["fetch", "sort", "board", "advance", "submit", "daily", "optimize", "cover", "apply", "end"],
         default="",
         help="Stop after this node (default: end, or fetch when --fetch-only)",
     )
@@ -147,6 +147,108 @@ def _print_jobs_table(jobs: list[dict]) -> None:
     console.print(table)
 
 
+def _advance_found(base_cv: str) -> int:
+    from job_assistant.nodes.advance_board import advance_found_cards
+
+    snapshot = Path("output/jobs.json")
+    jobs: list[dict] = []
+    if snapshot.exists():
+        payload = json.loads(snapshot.read_text(encoding="utf-8"))
+        jobs = list(payload.get("jobs") or [])
+    console.print(
+        Panel.fit(
+            "Tailor each Found card, then prepare its apply packet",
+            title="Job Assistant",
+        )
+    )
+    messages = advance_found_cards(jobs, base_cv)
+    for message in messages:
+        console.print(f"• {message}")
+    if not messages:
+        console.print("[yellow]No cards in Found.[/yellow]")
+    return 0
+
+
+def _daily(base_cv: str, preferences: dict) -> int:
+    from job_assistant.nodes.advance_board import advance_found_cards
+    from job_assistant.nodes.daily import run_daily
+    from job_assistant.nodes.read_inbox import read_inbox
+    from job_assistant.nodes.submit_board import submit_tailored_cards
+
+    def fetch() -> list[str]:
+        app = build_graph(until="board")
+        result = app.invoke(
+            {
+                "preferences": preferences,
+                "base_cv": base_cv,
+                "max_jobs": int(preferences.get("max_jobs") or 40),
+                "jobs": [],
+                "sorted_jobs": [],
+                "selected_job": None,
+                "updated_cv": "",
+                "cv_changes": [],
+                "evaluation": None,
+                "cover_letter": "",
+                "application_path": "",
+                "output_path": "",
+                "messages": [],
+            }
+        )
+        messages = list(result.get("messages") or [])
+        ranked = result.get("sorted_jobs") or result.get("jobs") or []
+        messages.append(f"Ranked {len(ranked)} jobs")
+        return messages
+
+    def advance() -> list[str]:
+        snapshot = Path("output/jobs.json")
+        jobs: list[dict] = []
+        if snapshot.exists():
+            payload = json.loads(snapshot.read_text(encoding="utf-8"))
+            jobs = list(payload.get("jobs") or [])
+        return advance_found_cards(jobs, base_cv) or ["No cards in Found."]
+
+    console.print(
+        Panel.fit(
+            "Fetch, tailor, submit, then read mail",
+            title="Job Assistant",
+        )
+    )
+    messages = run_daily(
+        fetch=fetch,
+        advance=advance,
+        submit=lambda: submit_tailored_cards() or ["No cards in Tailored."],
+        inbox=read_inbox,
+    )
+    for message in messages:
+        console.print(f"• {message}")
+    _save_report(messages)
+    return 0
+
+
+def _save_report(messages: list[str]) -> None:
+    from job_assistant.services.run_report import save_run_report
+
+    path = save_run_report(messages)
+    console.print(f"\n[green]Report saved.[/green] {path}")
+
+
+def _submit_tailored() -> int:
+    from job_assistant.nodes.submit_board import submit_tailored_cards
+
+    console.print(
+        Panel.fit(
+            "Submit the employer form for each Tailored card",
+            title="Job Assistant",
+        )
+    )
+    messages = submit_tailored_cards()
+    for message in messages:
+        console.print(f"• {message}")
+    if not messages:
+        console.print("[yellow]No cards in Tailored.[/yellow]")
+    return 0
+
+
 def main() -> int:
     load_dotenv()
     args = parse_args()
@@ -168,11 +270,23 @@ def main() -> int:
     preferences = load_preferences(args)
 
     until = args.until or ("fetch" if args.fetch_only else "end")
+    if until == "advance":
+        return _advance_found(base_cv)
+    if until == "submit":
+        return _submit_tailored()
+    if until == "daily":
+        return _daily(base_cv, preferences)
     flow = {
         "fetch": "Himalayas fetch → state",
         "sort": "fetch → sort against CV skills",
+        "board": "fetch → sort → add top matches to Trello Found",
+        "advance": "tailor and prepare an apply packet for each Found card",
+        "submit": "send the employer form for each Tailored card",
+        "daily": "fetch → Found cards → tailor and submit → read mail",
         "optimize": "fetch → sort → tailor CV to JD (human/ATS-safe)",
-        "end": "fetch → sort → optimize CV → evaluate → print",
+        "cover": "fetch → sort → tailor → ATS eval → Claude cover letter",
+        "apply": "fetch → sort → tailor → ATS eval → cover letter → apply packet",
+        "end": "fetch → sort → optimize → evaluate → cover letter → apply → print",
     }.get(until, until)
     console.print(Panel.fit(flow, title="Job Assistant Graph"))
     console.print(f"CV: {cv_path} ({len(base_cv)} chars)")
@@ -190,6 +304,8 @@ def main() -> int:
             "updated_cv": "",
             "cv_changes": [],
             "evaluation": None,
+            "cover_letter": "",
+            "application_path": "",
             "output_path": "",
             "messages": [],
         }
@@ -200,6 +316,12 @@ def main() -> int:
         console.print(f"• {message}")
 
     jobs = result.get("sorted_jobs") or result.get("jobs") or []
+    if until == "board":
+        _print_jobs_table(jobs[:8])
+        console.print("\n[green]Trello Found updated.[/green]")
+        _save_report(list(result.get("messages") or []))
+        return 0
+
     if until in {"fetch", "sort"}:
         _print_jobs_table(jobs)
         label = "ranked" if until == "sort" else "saved"
@@ -219,6 +341,31 @@ def main() -> int:
         if result.get("output_path"):
             console.print(f"Saved: {result['output_path']}")
         preview = (result.get("updated_cv") or "")[:1200]
+        if preview:
+            console.print("\n" + preview)
+        return 0
+
+    if until == "cover":
+        job = result.get("selected_job") or {}
+        console.print(
+            f"\n[green]Cover letter[/green] for {job.get('title')} @ {job.get('company')}"
+        )
+        if result.get("application_path"):
+            console.print(f"Saved: {result['application_path']}")
+        preview = (result.get("cover_letter") or "")[:1200]
+        if preview:
+            console.print("\n" + preview)
+        return 0
+
+    if until == "apply":
+        job = result.get("selected_job") or {}
+        console.print(
+            f"\n[green]Apply packet[/green] for {job.get('title')} @ {job.get('company')}"
+        )
+        console.print(f"Open: {job.get('url')}")
+        if result.get("application_path"):
+            console.print(f"Cover letter: {result['application_path']}")
+        preview = (result.get("cover_letter") or "")[:800]
         if preview:
             console.print("\n" + preview)
         return 0

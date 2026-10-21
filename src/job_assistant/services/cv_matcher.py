@@ -41,6 +41,11 @@ SKILL_ALIASES: dict[str, tuple[str, ...]] = {
         "web workers",
     ),
     "Fintech": ("fintech", "trading", "order-book", "order book"),
+    "Claude": ("claude api", r"\bclaude\b", "anthropic"),
+    "LLM": (r"\bllm\b", "large language model", "structured output", "structured outputs"),
+    "Cursor": (r"\bcursor\b",),
+    "LangGraph": ("langgraph",),
+    "Pydantic": ("pydantic",),
 }
 
 SKILL_WEIGHTS: dict[str, float] = {
@@ -64,6 +69,11 @@ SKILL_WEIGHTS: dict[str, float] = {
     "Design Systems": 0.6,
     "Performance": 0.7,
     "Fintech": 0.55,
+    "Claude": 0.85,
+    "LLM": 0.85,
+    "Cursor": 0.5,
+    "LangGraph": 0.55,
+    "Pydantic": 0.45,
     "REST APIs": 0.4,
     "HTML": 0.3,
     "CSS": 0.3,

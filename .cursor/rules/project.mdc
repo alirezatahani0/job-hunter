@@ -17,11 +17,11 @@ Personal LangGraph app: fetch remote jobs, rank them against a CV, optionally ta
 
 ## Pipeline
 
-`fetch_jobs → sort_jobs → optimize_cv → evaluate_cv → print_output`
+`fetch_jobs → sort_jobs → optimize_cv → evaluate_cv → write_cover_letter → apply_job → print_output`
 
-CLI can stop early with `--until fetch|sort|optimize|end`. Web UI **Fetch & rank** runs until sort. **Check ATS** runs a local pass/fail (no API). **Tailor resume to this JD** calls `POST /api/optimize` (needs `ANTHROPIC_API_KEY`).
+CLI can stop early with `--until fetch|sort|board|advance|submit|daily|optimize|cover|apply|end`. `--until board` scores every fetched role and adds each new match above 50% to the Trello Found column. There is no daily card cap. `--until advance` tailors each Found card, attaches the Word resume and cover letter, and tries to submit the employer form. `--until submit` sends the form for each Tailored card. `--until daily` fetches, adds Found cards, tailors and submits what it can, then reads mail. A launchd job runs that every day at 10:00 and 15:00 London time. Applied is only after the site accepts it. A captcha stop stays in Tailored. Web UI **Fetch & rank** runs until sort and keeps remote jobs only. **Check ATS** is local. **Write cover letter** uses Claude (`ANTHROPIC_API_KEY`). **Apply** is remote-only and submits Dover or Recruitee when the form can be completed. **Tailor resume** also needs the Anthropic key.
 
-Default job source: Himalayas. Keep only worldwide / all-timezone roles. Other sources: wellfound, auto, remoteok, remotive.
+Default job source: `boards` (Glassdoor last-day remote search, plus Himalayas worldwide, Wellfound, Remote OK, and Remotive). Glassdoor has no public API and may answer with a bot check. Other sources: himalayas, glassdoor, wellfound, auto, remoteok, remotive.
 
 Sort uses CV skill overlap (`cv_matcher`), not salary-first heuristics. Optimize may only emphasize skills already on the CV, then humanizes wording for ATS.
 
@@ -33,8 +33,8 @@ export PYTHONPATH=src
 python -m job_assistant.web   # http://127.0.0.1:8765
 ```
 
-Needs `ANTHROPIC_API_KEY` in `.env` for optimize only. ATS check is local. Do not commit `.env` or PDFs. Resume downloads are `.docx`, not PDF.
+Needs `ANTHROPIC_API_KEY` in `.env` for optimize and cover letters. ATS check is local. Do not commit `.env` or PDFs. Resume downloads are `.docx`, not PDF.
 
 ## Context files
 
-Before exploring the repo, read `docs/STATUS.md` and `docs/DECISIONS.md`. After a decision or a finished change, update those files.
+Before exploring the repo, read `docs/STATUS.md` and `docs/DECISIONS.md`. After a decision or a finished change, update those files. Then bump `VERSION`, commit, tag `vX.Y.Z`, and push to origin. Do not commit `.env` or PDFs. A patch bump is a fix. A minor bump is a new behavior. The tag is the version that can be restored later.

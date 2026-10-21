@@ -20,6 +20,8 @@ class Job(TypedDict):
     location_requirements: NotRequired[str]
     matched_skills: NotRequired[list[str]]
     score_breakdown: NotRequired[dict[str, Any]]
+    applied: NotRequired[bool]
+    applied_at: NotRequired[str]
     score: NotRequired[float]
 
 
@@ -50,5 +52,7 @@ class JobAssistantState(TypedDict):
     updated_cv: str
     cv_changes: list[str]
     evaluation: EvaluationScores | None
+    cover_letter: str
+    application_path: str
     output_path: str
     messages: list[str]

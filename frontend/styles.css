@@ -32,6 +32,22 @@ body {
   background: var(--bg);
 }
 
+.run-report {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.run-report p:last-child {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  color: var(--muted);
+}
+
 .atmosphere {
   position: fixed;
   inset: 0;
@@ -350,6 +366,14 @@ input[type="search"]::placeholder { color: #7f8dad; }
   font-size: 12px;
   color: var(--muted);
   font-family: var(--mono);
+}
+
+.chip.applied {
+  color: var(--violet);
+  border-color: rgba(180, 140, 255, 0.5);
+  background: rgba(180, 140, 255, 0.1);
+  display: inline-block;
+  margin-top: 8px;
 }
 
 .chip.match {

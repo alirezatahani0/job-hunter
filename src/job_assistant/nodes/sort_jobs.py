@@ -34,7 +34,6 @@ def sort_jobs_node(state: JobAssistantState) -> dict:
         ),
         reverse=True,
     )
-
     selected = scored[0] if scored else None
     if selected:
         skills = ", ".join(selected.get("matched_skills") or []) or "n/a"
@@ -46,10 +45,14 @@ def sort_jobs_node(state: JobAssistantState) -> dict:
     else:
         msg = "No jobs to sort/select."
 
-    snapshot = "output/himalayas_jobs.json"
     source = (prefs.get("source") or "himalayas").lower()
-    if source == "wellfound":
-        snapshot = "output/wellfound_jobs.json"
+    snapshot = {
+        "wellfound": "output/wellfound_jobs.json",
+        "glassdoor": "output/glassdoor_jobs.json",
+        "remoteok": "output/remoteok_jobs.json",
+        "remotive": "output/remotive_jobs.json",
+        "boards": "output/jobs.json",
+    }.get(source, "output/himalayas_jobs.json")
     persist_jobs(scored, snapshot)
 
     return {

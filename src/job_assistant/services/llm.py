@@ -11,6 +11,7 @@ T = TypeVar("T", bound=BaseModel)
 
 _CV_ALIASES = ("updated_cv", "resume", "cv", "updated_resume", "markdown", "text")
 _CHANGES_ALIASES = ("changes_made", "changes", "edits", "notes")
+_LETTER_ALIASES = ("cover_letter", "letter", "body", "text")
 
 
 def get_llm(temperature: float = 0.2) -> ChatAnthropic:
@@ -56,6 +57,17 @@ def coerce_to_schema(schema: type[T], payload: Any) -> T:
         data.setdefault("keywords_used", [])
     if "ai_tells_removed" in fields:
         data.setdefault("ai_tells_removed", [])
+    if "cover_letter" in fields and "cover_letter" not in data:
+        for key in _LETTER_ALIASES:
+            value = data.get(key)
+            if isinstance(value, str) and value.strip():
+                data["cover_letter"] = value
+                break
+    if "points_used" in fields:
+        data.setdefault("points_used", [])
+    if isinstance(data.get("points_used"), str):
+        text = data["points_used"].strip()
+        data["points_used"] = [text] if text else []
 
     return schema.model_validate(data)
 

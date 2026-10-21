@@ -9,6 +9,7 @@ from job_assistant.state import JobAssistantState
 def print_output_node(state: JobAssistantState) -> dict:
     job = state.get("selected_job")
     updated_cv = state.get("updated_cv") or ""
+    cover_letter = state.get("cover_letter") or ""
     evaluation = state.get("evaluation")
 
     out_dir = Path("output")
@@ -58,6 +59,9 @@ def print_output_node(state: JobAssistantState) -> dict:
         for note in evaluation.get("feedback") or []:
             lines.append(f"- {note}")
         lines.append("")
+
+    if cover_letter.strip():
+        lines.extend(["## Cover letter", "", cover_letter.strip(), ""])
 
     lines.extend(["## Updated Resume", "", updated_cv.strip(), ""])
     content = "\n".join(lines)
