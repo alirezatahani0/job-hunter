@@ -3,9 +3,37 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from job_assistant.services.eastern_boards import (
+    fetch_bulldog_jobs,
+    fetch_devbg_jobs,
+    fetch_djinni_jobs,
+    fetch_jobsbg_jobs,
+    fetch_jobtiger_jobs,
+    fetch_justjoin_jobs,
+    fetch_nofluff_jobs,
+    fetch_rabota_jobs,
+)
+from job_assistant.services.general_boards import (
+    fetch_arc_jobs,
+    fetch_hn_jobs,
+    fetch_indeed_jobs,
+    fetch_landing_jobs,
+    fetch_linkedin_jobs,
+    fetch_relocate_jobs,
+    fetch_welcome_jobs,
+    fetch_ycombinator_jobs,
+)
 from job_assistant.services.glassdoor import GlassdoorBlocked, fetch_glassdoor_jobs
 from job_assistant.services.remote import is_remote_job
 from job_assistant.services.himalayas import fetch_himalayas_jobs
+from job_assistant.services.remote_boards import (
+    fetch_dynamite_jobs,
+    fetch_euremote_jobs,
+    fetch_fourdayweek_jobs,
+    fetch_justremote_jobs,
+    fetch_weworkremotely_jobs,
+    fetch_workingnomads_jobs,
+)
 from job_assistant.services.remoteok import fetch_remoteok_jobs
 from job_assistant.services.remotive import fetch_remotive_jobs
 from job_assistant.services.wellfound import fetch_wellfound_jobs
@@ -98,7 +126,7 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
         "remoteok": "output/remoteok_jobs.json",
         "remotive": "output/remotive_jobs.json",
         "boards": "output/jobs.json",
-    }.get(source, "output/jobs.json")
+    }.get(source, f"output/{source}_jobs.json")
 
     def _take(name: str, batch: list[Job], *, replace: bool) -> None:
         nonlocal jobs, used
@@ -131,6 +159,27 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
                 return
             raise
         _take(name, batch, replace=replace)
+
+    def _extra(name: str, loader) -> None:
+        if boards or source == name:
+            _load(name, loader)
+
+    # Eastern Europe and Bulgaria, then remote-first, then general tech.
+    limit = max(max_jobs, 40)
+    _extra("devbg", lambda: fetch_devbg_jobs(limit=limit))
+    _extra("jobsbg", lambda: fetch_jobsbg_jobs(limit=limit))
+    _extra("jobtiger", lambda: fetch_jobtiger_jobs(limit=limit))
+    _extra("rabota", lambda: fetch_rabota_jobs(limit=limit))
+    _extra("nofluff", lambda: fetch_nofluff_jobs(limit=limit))
+    _extra("justjoin", lambda: fetch_justjoin_jobs(limit=limit))
+    _extra("bulldog", lambda: fetch_bulldog_jobs(limit=limit))
+    _extra("djinni", lambda: fetch_djinni_jobs(limit=limit))
+    _extra("weworkremotely", lambda: fetch_weworkremotely_jobs(limit=limit))
+    _extra("fourdayweek", lambda: fetch_fourdayweek_jobs(limit=limit))
+    _extra("justremote", lambda: fetch_justremote_jobs(limit=limit))
+    _extra("workingnomads", lambda: fetch_workingnomads_jobs(limit=limit))
+    _extra("euremote", lambda: fetch_euremote_jobs(limit=limit))
+    _extra("dynamite", lambda: fetch_dynamite_jobs(limit=limit))
 
     if source in {"himalayas", "auto", "boards"}:
         queries = [query] if query else []
@@ -170,6 +219,15 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
                 relevant_only=True,
             ),
         )
+
+    _extra("linkedin", lambda: fetch_linkedin_jobs(limit=limit))
+    _extra("indeed", lambda: fetch_indeed_jobs(limit=limit))
+    _extra("welcometothejungle", lambda: fetch_welcome_jobs(limit=limit))
+    _extra("arc", lambda: fetch_arc_jobs(limit=limit))
+    _extra("ycombinator", lambda: fetch_ycombinator_jobs(limit=limit))
+    _extra("hn", lambda: fetch_hn_jobs(limit=limit))
+    _extra("landing", lambda: fetch_landing_jobs(limit=limit))
+    _extra("relocate", lambda: fetch_relocate_jobs(limit=limit))
 
     if source in {"glassdoor", "boards"}:
         glassdoor_queries = [query] if query else []

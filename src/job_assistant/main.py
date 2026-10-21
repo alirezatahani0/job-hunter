@@ -59,9 +59,42 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-jobs", type=int, default=40, help="Max jobs to consider")
     parser.add_argument(
         "--source",
-        choices=["boards", "himalayas", "glassdoor", "wellfound", "auto", "remoteok", "remotive"],
+        choices=[
+            "boards",
+            "himalayas",
+            "glassdoor",
+            "wellfound",
+            "auto",
+            "remoteok",
+            "remotive",
+            "devbg",
+            "jobsbg",
+            "jobtiger",
+            "rabota",
+            "nofluff",
+            "justjoin",
+            "bulldog",
+            "djinni",
+            "weworkremotely",
+            "fourdayweek",
+            "justremote",
+            "workingnomads",
+            "euremote",
+            "dynamite",
+            "linkedin",
+            "indeed",
+            "welcometothejungle",
+            "arc",
+            "ycombinator",
+            "hn",
+            "landing",
+            "relocate",
+        ],
         default="boards",
-        help="Job source (default: boards = Glassdoor + Himalayas + Wellfound + Remote OK + Remotive)",
+        help=(
+            "Job source (default: boards). boards fetches Eastern Europe first, "
+            "then remote-first boards, then general tech boards."
+        ),
     )
     parser.add_argument(
         "--himalayas-pages",

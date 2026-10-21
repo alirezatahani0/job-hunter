@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-21 — Fetch Eastern Europe, then remote boards, then general boards
+
+Choice: The default `boards` fetch adds DEV.bg, Jobs.bg, JobTiger, Rabota.bg, No Fluff Jobs, Just Join IT, Bulldogjob, and Djinni first, then We Work Remotely, 4 Day Week, JustRemote, Working Nomads, EU Remote Jobs, and Dynamite Jobs, then LinkedIn, Indeed, Welcome to the Jungle, Arc, Y Combinator, Hacker News, Landing.jobs, and Relocate.me. Bulgaria and Sofia count as an open location. A public page that answers with a bot check, or that does not include listings, is skipped for that run.
+
+Why: The search should see Bulgarian and Central European tech boards before the international ones. Roles that are remote inside Bulgaria are roles he can take.
+
 ## 2026-10-21 — Skip closed country lists and unpaid roles
 
 Choice: A role is left off the board when it is unpaid or volunteer, or when its locations are a fixed country list that does not include Bulgaria or Europe. Current salary and expected salary are both 85000 when a form requires a number. The Wellfound password lives only in `.env`.

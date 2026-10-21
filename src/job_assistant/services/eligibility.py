@@ -116,13 +116,14 @@ _OPEN_LOCATIONS = ("worldwide", "anywhere", "all countries", "all timezones")
 
 
 def is_open_to_applicant(job: Job) -> bool:
-    """Worldwide, Europe, or plain remote. A single country or city does not qualify."""
+    """Worldwide, Europe, Bulgaria, or plain remote. Another single country does not qualify."""
     location = (job.get("location") or "").lower()
     if any(token in location for token in _OPEN_LOCATIONS):
         return True
-    if "europe" in location:
+    if any(token in location for token in ("europe", "bulgaria", "sofia")):
         return True
     compact = location.replace("remote", " ").replace("|", " ").replace("-", " ")
+    compact = compact.replace("work from home", " ").replace("wfh", " ")
     return " ".join(compact.split()) == ""
 
 
