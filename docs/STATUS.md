@@ -4,7 +4,7 @@ Living snapshot of what works now. Keep this short. Update at the end of a sessi
 
 Last updated: 2026-10-21
 
-Current version: **v0.6.1** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
+Current version: **v0.6.2** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
 
 ## Working
 
@@ -20,6 +20,7 @@ Current version: **v0.6.1** (`VERSION`, git tag). Each finished change bumps the
 - Web “Fetch & rank” runs `until="sort"` → `output/himalayas_jobs.json`
 - Web tailor runs `POST /api/optimize` → one `claude-haiku-4-5` call → `output/optimized_cv.md`
 - Web cover letter runs `POST /api/cover` → one Haiku call → `output/cover_letters.json`
+- Open answers for repeat form questions live in `data/form_answers.md`. The same text is copied onto the Trello card as a comment.
 
 ## In progress / next
 

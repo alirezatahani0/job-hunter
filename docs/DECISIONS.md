@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-21 — Save open-question answers on the card
+
+Choice: Written answers for the usual application questions live in `data/form_answers.md` and are copied onto the Trello card as a comment before the form is sent. They are written from the CV, in the first person.
+
+Why: The same questions come back on later forms, and the card should show what was asked and what was answered.
+
 ## 2026-10-21 — Skip a board that does not answer
 
 Choice: Each source in a fetch has 150 seconds. If it is still waiting, that source is skipped and the run continues.
