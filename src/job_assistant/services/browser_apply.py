@@ -11,6 +11,7 @@ from job_assistant.services.employer_form import (
     APPLICANT_LAST,
     APPLICANT_LINKEDIN,
     applicant_phone,
+    applicant_salary,
     classify_apply_url,
     failed,
     pick_location,
@@ -111,7 +112,7 @@ def _open(url: str, *, kind: str, resume_path: Path, cover_path: Path | None) ->
                 return _submit_dover(page, url, resume_path)
             if kind == "recruitee":
                 return _submit_recruitee(page, url, resume_path, cover_path)
-            return _submit_wellfound(page, url)
+            return _submit_wellfound(page, url, resume_path)
         finally:
             context.close()
 
@@ -123,6 +124,7 @@ def _submit_dover(page, url: str, resume_path: Path) -> dict:
     page.locator('input[name="email"]').fill(APPLICANT_EMAIL)
     page.locator('input[name="linkedinUrl"]').fill(APPLICANT_LINKEDIN)
     page.locator('input[name="phoneNumber"]').fill(applicant_phone())
+    _fill_dover_salaries(page)
     page.locator('input[type="file"]').last.set_input_files(str(resume_path))
     try:
         page.wait_for_function(
@@ -196,6 +198,24 @@ def _submit_recruitee(page, url: str, resume_path: Path, cover_path: Path | None
     )
 
 
+def _fill_dover_salaries(page) -> None:
+    known = {"firstname", "lastname", "email", "linkedinurl", "phonenumber"}
+    current = applicant_salary("APPLICANT_CURRENT_SALARY")
+    expected = applicant_salary("APPLICANT_EXPECTED_SALARY")
+    extras = []
+    inputs = page.locator("input")
+    for index in range(inputs.count()):
+        field = inputs.nth(index)
+        name = (field.get_attribute("name") or "").lower()
+        field_type = (field.get_attribute("type") or "text").lower()
+        if field_type == "text" and field.get_attribute("required") is not None and name not in known:
+            extras.append(field)
+    if extras:
+        extras[0].fill(current)
+    if len(extras) > 1:
+        extras[1].fill(expected)
+
+
 def _fill_phone(page) -> None:
     phone = page.get_by_role("textbox", name="Phone number")
     phone.fill(applicant_phone())
@@ -222,10 +242,13 @@ def _choose_recruitee_location(page) -> dict | None:
     return chosen
 
 
-def _submit_wellfound(page, url: str) -> dict:
+def _submit_wellfound(page, url: str, resume_path: Path) -> dict:
     page.goto(url, wait_until="domcontentloaded")
-    body = page.inner_text("body")[:1500].lower()
-    if "log in" in body or "sign up" in body or "sign in" in body or "set a password" in body:
+    password = os.getenv("WELLFOUND_PASSWORD", "").strip()
+    password_box = page.locator("#form-input--password")
+    try:
+        password_box.wait_for(timeout=12000)
+    except Exception:  # noqa: BLE001
         return failed(
             "login",
             "Wellfound asks for a new account password before it will take the application. The form was not sent. "
@@ -233,9 +256,63 @@ def _submit_wellfound(page, url: str) -> dict:
             needs_you=True,
             apply_url=url,
         )
-    return failed(
-        "apply link",
-        f"Wellfound did not show a form this submitter can send. Posting: {url}",
-        needs_you=True,
-        apply_url=url,
-    )
+    if not password:
+        return failed(
+            "login",
+            "Wellfound asks for a new account password before it will take the application. The form was not sent. "
+            f"Posting: {url}",
+            needs_you=True,
+            apply_url=url,
+        )
+    page.locator("#form-input--name").fill(f"{APPLICANT_FIRST} {APPLICANT_LAST}")
+    page.locator("#form-input--email").fill(APPLICANT_EMAIL)
+    password_box.fill(password)
+    confirm = page.locator("#form-input--passwordConfirmation")
+    if confirm.count():
+        confirm.fill(password)
+    location = page.locator("#downshift-0-input")
+    if location.count():
+        location.fill(f"{APPLICANT_CITY}, {APPLICANT_COUNTRY}")
+        page.wait_for_timeout(800)
+        option = page.get_by_role("option").filter(has_text="Sofia")
+        if option.count():
+            option.first.click()
+        else:
+            location.press("Enter")
+    remote = page.locator("#form-input--remote--true")
+    if remote.count():
+        remote.evaluate("el => el.click()")
+    years = page.locator("input[id*='yearsOfExperience']")
+    if years.count():
+        years.first.click(force=True, timeout=5000)
+        years.first.fill("9")
+        page.keyboard.press("Enter")
+    salary = page.locator("#form-input--desiredSalary")
+    if salary.count():
+        salary.fill(applicant_salary("APPLICANT_EXPECTED_SALARY"))
+    for field_id in ("#form-input--usAuthorized--false", "#form-input--requireSponsorship--false"):
+        box = page.locator(field_id)
+        if box.count():
+            box.evaluate("el => el.click()")
+    note = page.locator("textarea")
+    if note.count():
+        note.first.fill(
+            "I have spent nine years building React and TypeScript products, and I can start immediately."
+        )
+    page.locator('input[type="file"]').first.set_input_files(str(resume_path))
+    page.get_by_role("button", name="Submit application").click()
+    page.wait_for_timeout(4000)
+    body = page.inner_text("body").lower()
+    if "existing user" in body:
+        return failed(
+            "login",
+            "This email already has a Wellfound account, so the new password was not accepted and the form was not sent.",
+            needs_you=True,
+            apply_url=url,
+        )
+    if "application submitted" in body or "thanks for applying" in body or "application sent" in body:
+        return succeeded("Created the Wellfound account and submitted the application.", apply_url=url)
+    if "password" in body and "at least" in body:
+        return failed("login", "Wellfound rejected the new account password, so the form was not sent.", apply_url=url)
+    snippet = " ".join(page.inner_text("body").split())[:240]
+    return failed("submit", f"The Wellfound form was filled but not accepted. {snippet}", apply_url=url)

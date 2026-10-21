@@ -179,6 +179,35 @@ class ChooseBoardJobsTests(unittest.TestCase):
         self.assertNotIn("half", [item["id"] for item in chosen])
         self.assertEqual(stats["dropped_score"], 1)
 
+    def test_unpaid_and_closed_country_lists_are_left_off(self):
+        volunteer = job(
+            id="volunteer",
+            company="Solution Community",
+            url="https://example.com/volunteer",
+            title="AI Full Stack Engineer (Volunteer, unpaid)",
+            score=0.95,
+            description="This is an unpaid volunteer role.",
+        )
+        closed = job(
+            id="closed",
+            company="Spotter",
+            url="https://example.com/closed",
+            title="Remote FullStack Engineer",
+            score=0.9,
+            location="Remote",
+            description="Locations: Argentina, India, Colombia, Mexico, Pakistan, Philippines.",
+        )
+        open_role = job(
+            id="open",
+            company="Open Co",
+            url="https://example.com/open",
+            score=0.8,
+        )
+        chosen, stats = choose_board_jobs([volunteer, closed, open_role], set())
+        self.assertEqual([item["id"] for item in chosen], ["open"])
+        self.assertEqual(stats["dropped_unpaid"], 1)
+        self.assertEqual(stats["dropped_region"], 1)
+
     def test_card_text_includes_company_and_url(self):
         listing = job()
         self.assertIn("Acme", card_name(listing))

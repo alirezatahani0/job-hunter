@@ -12,6 +12,7 @@ def board_report(*, fetched: int, kept: int, ranked: int, stats: dict) -> str:
         f"{stats.get('dropped_us', 0)} US-only, "
         f"{stats.get('dropped_region', 0)} country-locked, "
         f"{stats.get('dropped_role', 0)} outside frontend/full-stack, "
+        f"{stats.get('dropped_unpaid', 0)} unpaid, "
         f"and {stats.get('dropped_score', 0)} at or below 50%. "
         f"It added {stats.get('chosen', 0)}."
     )

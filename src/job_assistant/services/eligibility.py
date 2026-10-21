@@ -133,6 +133,31 @@ def is_target_role(job: Job) -> bool:
     return any(token in title for token in _TARGET_ROLES)
 
 
+def is_unpaid(job: Job) -> bool:
+    """Volunteer and unpaid roles are not applications."""
+    blob = f"{job.get('title') or ''} {job.get('description') or ''}".lower()
+    return any(token in blob for token in ("volunteer", "unpaid", "pro bono"))
+
+
+_CLOSED_COUNTRIES = (
+    "argentina",
+    "india",
+    "colombia",
+    "mexico",
+    "pakistan",
+    "philippines",
+)
+
+
+def is_closed_country_list(job: Job) -> bool:
+    """A fixed country list that does not include Bulgaria or Europe."""
+    blob = _blob(job)
+    if any(token in blob for token in ("worldwide", "europe", "bulgaria", "sofia", "anywhere", "global")):
+        return False
+    hits = sum(1 for name in _CLOSED_COUNTRIES if name in blob)
+    return hits >= 3
+
+
 def choose_board_jobs(
     jobs: list[Job],
     existing_urls: set[str],
@@ -149,6 +174,7 @@ def choose_board_jobs(
         "dropped_existing": 0,
         "dropped_company": 0,
         "dropped_score": 0,
+        "dropped_unpaid": 0,
         "chosen": 0,
     }
     known = {url.strip() for url in existing_urls if url and url.strip()}
@@ -165,6 +191,12 @@ def choose_board_jobs(
             continue
         if not is_target_role(job):
             stats["dropped_role"] += 1
+            continue
+        if is_unpaid(job):
+            stats["dropped_unpaid"] += 1
+            continue
+        if is_closed_country_list(job):
+            stats["dropped_region"] += 1
             continue
         url = (job.get("url") or "").strip()
         if url and url in known:

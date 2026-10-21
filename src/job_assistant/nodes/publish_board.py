@@ -37,6 +37,7 @@ def publish_board_node(state: JobAssistantState, client: TrelloClient | None = N
         f"{stats['dropped_us']} US-only, {stats['dropped_region']} country-locked, "
         f"{stats['dropped_remote']} not remote, "
         f"{stats['dropped_role']} outside frontend/full-stack, "
+        f"{stats.get('dropped_unpaid', 0)} unpaid, "
         f"{stats['dropped_score']} at or below 50%)."
     )
     if links:

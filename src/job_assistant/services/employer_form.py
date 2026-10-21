@@ -21,6 +21,10 @@ def applicant_phone() -> str:
     return os.getenv("APPLICANT_PHONE", "+372 5605 7387").strip()
 
 
+def applicant_salary(name: str) -> str:
+    return os.getenv(name, "85000").strip() or "85000"
+
+
 def classify_apply_url(url: str) -> str:
     host = urlparse(url or "").netloc.lower()
     if "dover.com" in host:

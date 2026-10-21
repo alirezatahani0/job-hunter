@@ -13,6 +13,14 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-21 — Skip closed country lists and unpaid roles
+
+Choice: A role is left off the board when it is unpaid or volunteer, or when its locations are a fixed country list that does not include Bulgaria or Europe. Current salary and expected salary are both 85000 when a form requires a number. The Wellfound password lives only in `.env`.
+
+Why: Spotter Labs only hires in countries other than Bulgaria, and Solution Community is unpaid. Those are not applications.
+
+---
+
 ## 2026-10-21 — Version every change and push it
 
 Choice: `VERSION` is the app version. Each finished change bumps it, commits, tags `vX.Y.Z`, and pushes to origin. The current snapshot is v0.4.0. Earlier commits are tagged v0.1.0, v0.2.0, and v0.3.0. `.env` and PDFs stay untracked.
