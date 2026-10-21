@@ -4,7 +4,7 @@ Living snapshot of what works now. Keep this short. Update at the end of a sessi
 
 Last updated: 2026-10-21
 
-Current version: **v0.6.0** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
+Current version: **v0.6.1** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
 
 ## Working
 
@@ -12,7 +12,7 @@ Current version: **v0.6.0** (`VERSION`, git tag). Each finished change bumps the
 - LangGraph pipeline: fetch → sort → optimize CV → evaluate → cover letter → apply → print. `--until board` stops after publishing Found cards.
 - CLI: `python -m job_assistant.main` with `--source boards` (or one board name) and `--until fetch|sort|board|advance|submit|daily|optimize|cover|apply|end`
 - `--until daily` fetches, scores every listing, adds every match above 50%, tailors and submits what it can, then reads mail. It writes `output/reports/latest.md`. launchd `com.alireza.job-assistant.daily` runs it every day at 10:00 and 15:00 Europe/London. The Mac has to be awake. Logs: `output/daily.log`.
-- Default fetch is `boards`, in this order: Eastern Europe and Bulgaria (DEV.bg, Jobs.bg, JobTiger, Rabota.bg, No Fluff Jobs, Just Join IT, Bulldogjob, Djinni), then remote-first boards (We Work Remotely, 4 Day Week, JustRemote, Working Nomads, EU Remote Jobs, Dynamite Jobs, Himalayas, Wellfound, Remote OK, Remotive), then general tech boards (LinkedIn, Indeed, Welcome to the Jungle, Arc, Y Combinator, Hacker News, Landing.jobs, Relocate.me, Glassdoor). A bot check or a page with no public listings is skipped and named in the run notes. Bulgaria and Sofia stay eligible.
+- Default fetch is `boards`, in this order: Eastern Europe and Bulgaria (DEV.bg, Jobs.bg, JobTiger, Rabota.bg, No Fluff Jobs, Just Join IT, Bulldogjob, Djinni), then remote-first boards (We Work Remotely, 4 Day Week, JustRemote, Working Nomads, EU Remote Jobs, Dynamite Jobs, Himalayas, Wellfound, Remote OK, Remotive), then general tech boards (LinkedIn, Indeed, Welcome to the Jungle, Arc, Y Combinator, Hacker News, Landing.jobs, Relocate.me, Glassdoor). A bot check, a page with no public listings, or a board that does not answer within 150 seconds is skipped and named in the run notes. Bulgaria and Sofia stay eligible.
 - 2026-10-19 ranked list is `output/jobs.json`. Himalayas, Wellfound, Remote OK, and Remotive returned remote roles. Glassdoor HTTP fetch is still blocked. Claude packets are status **ready** for hard.coded, Vagmine Tech IT, Casino Alpha, Apiphany AI, and Halliday, plus the earlier worldwide batch.
 - Sort ranks jobs against `data/alireza_tahani_cv.md` (skills + role fit). Contact is email only. Experience headers: SAP (Germany) / Identity Global (UK); Fixefy.io. Claude/Cursor + Job Assistant project — no fake healthcare/HIPAA.
 - Local UI: **Apply** runs only for remote jobs. It saves the cover letter and Word resume, then submits a Dover or Recruitee form when that form can be completed. The chip says Applied only after the site accepts it.

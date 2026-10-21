@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-21 — Skip a board that does not answer
+
+Choice: Each source in a fetch has 150 seconds. If it is still waiting, that source is skipped and the run continues.
+
+Why: One site held the connection open and the 15:00 job could not finish the new board list.
+
 ## 2026-10-21 — Fetch Eastern Europe, then remote boards, then general boards
 
 Choice: The default `boards` fetch adds DEV.bg, Jobs.bg, JobTiger, Rabota.bg, No Fluff Jobs, Just Join IT, Bulldogjob, and Djinni first, then We Work Remotely, 4 Day Week, JustRemote, Working Nomads, EU Remote Jobs, and Dynamite Jobs, then LinkedIn, Indeed, Welcome to the Jungle, Arc, Y Combinator, Hacker News, Landing.jobs, and Relocate.me. Bulgaria and Sofia count as an open location. A public page that answers with a bot check, or that does not include listings, is skipped for that run.

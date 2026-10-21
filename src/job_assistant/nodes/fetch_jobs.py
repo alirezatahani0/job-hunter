@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 from job_assistant.services.eastern_boards import (
@@ -148,8 +149,23 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
 
     def _load(name: str, loader) -> None:
         replace = source == name
+        box: dict = {}
+
+        def _run() -> None:
+            try:
+                box["batch"] = loader()
+            except Exception as exc:  # noqa: BLE001
+                box["error"] = exc
+
+        worker = threading.Thread(target=_run, daemon=True)
+        worker.start()
+        worker.join(150)
         try:
-            batch = loader()
+            if worker.is_alive():
+                raise TimeoutError(f"{name} took longer than 150 seconds")
+            if "error" in box:
+                raise box["error"]
+            batch = box.get("batch") or []
         except GlassdoorBlocked as exc:
             notes.append(str(exc))
             return
