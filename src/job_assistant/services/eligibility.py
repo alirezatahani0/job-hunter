@@ -112,19 +112,83 @@ def pays_with_crypto(job: Job) -> bool:
     return re.search(r"\b(usdc|usdt|bitcoin|btc|ethereum)\b", blob) is not None
 
 
-_OPEN_LOCATIONS = ("worldwide", "anywhere", "all countries", "all timezones")
+_FREE_PLACES = (
+    "100 percent remote",
+    "100% remote",
+    "work from anywhere",
+    "work from home",
+    "all countries",
+    "any country",
+    "all locations",
+    "any location",
+    "all timezones",
+    "any timezone",
+    "location independent",
+    "fully remote",
+    "full remote",
+    "world wide",
+    "worldwide",
+    "anywhere",
+    "international",
+    "global",
+    "remote",
+    "wfh",
+    "distributed",
+)
+
+_PLACE_LOCKS = (
+    "must be based",
+    "must be located",
+    "must reside",
+    "must live in",
+    "eligible countries",
+    "following countries",
+    "only open to candidates",
+    "candidates must be located",
+    "applicants must be located",
+    "europe only",
+    "eu only",
+    "eea only",
+    "emea only",
+    "within europe",
+    "within the eu",
+    "remote within",
+)
+
+
+def _place_text(job: Job) -> str:
+    return " ".join(
+        [
+            job.get("location") or "",
+            job.get("location_requirements") or "",
+            job.get("hiring_timezones") or "",
+        ]
+    ).lower()
+
+
+def _description_locks_place(job: Job) -> bool:
+    text = (job.get("description") or "")[:2500].lower()
+    if any(phrase in text for phrase in _PLACE_LOCKS):
+        return True
+    match = re.search(r"\blocations?\s*:\s*([^\n.]{0,180})", text)
+    if not match:
+        return False
+    tail = match.group(1)
+    return not any(token in tail for token in ("worldwide", "anywhere", "global", "all countries"))
 
 
 def is_open_to_applicant(job: Job) -> bool:
-    """Worldwide, Europe, Bulgaria, or plain remote. Another single country does not qualify."""
-    location = (job.get("location") or "").lower()
-    if any(token in location for token in _OPEN_LOCATIONS):
-        return True
-    if any(token in location for token in ("europe", "bulgaria", "sofia")):
-        return True
-    compact = location.replace("remote", " ").replace("|", " ").replace("-", " ")
-    compact = compact.replace("work from home", " ").replace("wfh", " ")
-    return " ".join(compact.split()) == ""
+    """Fully remote roles that hire from any location. A country, region, or timezone limit does not qualify."""
+    timezones = (job.get("hiring_timezones") or "").strip().lower()
+    if timezones and "all timezone" not in timezones and timezones not in {"worldwide", "anywhere", "global"}:
+        return False
+    compact = _place_text(job)
+    for phrase in sorted(_FREE_PLACES, key=len, reverse=True):
+        compact = compact.replace(phrase, " ")
+    compact = re.sub(r"[^a-z0-9\s]", " ", compact)
+    if " ".join(compact.split()):
+        return False
+    return not _description_locks_place(job)
 
 
 def is_target_role(job: Job) -> bool:

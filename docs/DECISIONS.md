@@ -13,6 +13,14 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-22 — Keep only fully remote roles that hire from anywhere
+
+Choice: A listing is kept only when it is fully remote and does not limit the country, region, or timezone. Europe-only, Bulgaria-only, and a fixed country list are left off, including a list that names Bulgaria. Hybrid and partly remote roles stay off.
+
+Why: Roles that are remote inside one region still require being there. The search is for work that can be done from anywhere.
+
+Rejected: Treating Europe or Bulgaria as an open location.
+
 ## 2026-10-21 — Save open-question answers on the card
 
 Choice: Written answers for the usual application questions live in `data/form_answers.md` and are copied onto the Trello card as a comment before the form is sent. They are written from the CV, in the first person.

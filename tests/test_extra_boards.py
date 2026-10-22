@@ -306,7 +306,7 @@ class ExtraBoardParserTests(unittest.TestCase):
         self.assertEqual(len(remote), 1)
         self.assertEqual(office[0]["location"].lower().startswith("japan") or "Japan" in office[0]["location"], True)
 
-    def test_bulgaria_remote_is_eligible_and_poland_only_is_not(self):
+    def test_country_remote_is_left_off_and_worldwide_is_kept(self):
         bulgaria = job(
             id="bg",
             url="https://example.com/bg",
@@ -320,8 +320,15 @@ class ExtraBoardParserTests(unittest.TestCase):
             location="Remote, Poland",
             score=0.8,
         )
-        chosen, _stats = choose_board_jobs([bulgaria, poland], set())
-        self.assertEqual([item["id"] for item in chosen], ["bg"])
+        anywhere = job(
+            id="anywhere",
+            url="https://example.com/anywhere",
+            company="Anywhere Co",
+            location="Worldwide",
+            score=0.7,
+        )
+        chosen, _stats = choose_board_jobs([bulgaria, poland, anywhere], set())
+        self.assertEqual([item["id"] for item in chosen], ["anywhere"])
 
 
 if __name__ == "__main__":

@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 _REMOTE = ("remote", "worldwide", "all countries", "anywhere", "work from home", "wfh")
-_BLOCKED = ("hybrid", "on-site", "onsite", "on site", "in-office", "in office")
+_BLOCKED = (
+    "hybrid",
+    "on-site",
+    "onsite",
+    "on site",
+    "in-office",
+    "in office",
+    "partially remote",
+    "remote-friendly",
+    "remote friendly",
+)
 
 
 def is_remote_job(job: dict) -> bool:

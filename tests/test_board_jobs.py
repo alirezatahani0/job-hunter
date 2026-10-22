@@ -128,8 +128,43 @@ class ChooseBoardJobsTests(unittest.TestCase):
             score=0.6,
         )
         chosen, stats = choose_board_jobs([india, europe], set(), limit=5)
-        self.assertEqual([item["id"] for item in chosen], ["europe"])
-        self.assertEqual(stats["dropped_region"], 1)
+        self.assertEqual(chosen, [])
+        self.assertEqual(stats["dropped_region"], 2)
+
+    def test_keeps_a_role_that_hires_from_anywhere(self):
+        anywhere = job(
+            id="anywhere",
+            url="https://example.com/anywhere",
+            location="Worldwide / all countries",
+            hiring_timezones="All timezones",
+            score=0.8,
+        )
+        europe = job(
+            id="europe",
+            url="https://example.com/europe",
+            company="Europe Co",
+            location="Remote, Europe",
+            score=0.9,
+        )
+        listed = job(
+            id="listed",
+            url="https://example.com/listed",
+            company="Listed Co",
+            location="Remote",
+            score=0.9,
+            description="Locations: Spain, Portugal, and Bulgaria.",
+        )
+        timezone = job(
+            id="timezone",
+            url="https://example.com/timezone",
+            company="Timezone Co",
+            location="Remote",
+            hiring_timezones="UTC+0 to UTC+3",
+            score=0.9,
+        )
+        chosen, stats = choose_board_jobs([europe, listed, timezone, anywhere], set())
+        self.assertEqual([item["id"] for item in chosen], ["anywhere"])
+        self.assertEqual(stats["dropped_region"], 3)
 
     def test_keeps_one_role_per_company(self):
         first = job(

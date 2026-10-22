@@ -16,6 +16,7 @@ from job_assistant.nodes.optimize_cv import optimize_cv_node
 from job_assistant.services.ats_check import evaluate_ats
 from job_assistant.services.cv_docx import DOCX_CONTENT_TYPE, markdown_to_docx
 from job_assistant.services.cv_loader import load_cv, strip_private_contact
+from job_assistant.services.eligibility import is_open_to_applicant
 from job_assistant.services.remote import is_remote_job
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,7 +51,7 @@ def load_saved_jobs() -> dict:
     applied = {item.get("job_id"): item for item in load_applications()}
     tagged = []
     for job in jobs:
-        if not is_remote_job(job):
+        if not is_remote_job(job) or not is_open_to_applicant(job):
             continue
         row = dict(job)
         record = applied.get(row.get("id"))

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from job_assistant.nodes.write_cover_letter import cover_for, persist_cover, write_cover_letter_for_job
 from job_assistant.services.cv_docx import markdown_to_docx
+from job_assistant.services.eligibility import is_open_to_applicant
 from job_assistant.services.remote import is_remote_job
 from job_assistant.state import Job, JobAssistantState
 
@@ -63,8 +64,10 @@ def apply_to_job(
     url = (job.get("url") or "").strip()
     if not url:
         raise ValueError("This listing has no apply URL.")
-    if not is_remote_job(job):
-        raise ValueError("This role is not remote. Apply only runs for remote jobs.")
+    if not is_remote_job(job) or not is_open_to_applicant(job):
+        raise ValueError(
+            "This role is not fully remote for any location. Apply only runs for those jobs."
+        )
     letter = (cover_letter or "").strip()
     if not letter:
         existing = cover_for(job.get("id"))

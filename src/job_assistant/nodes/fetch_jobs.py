@@ -25,6 +25,7 @@ from job_assistant.services.general_boards import (
     fetch_ycombinator_jobs,
 )
 from job_assistant.services.glassdoor import GlassdoorBlocked, fetch_glassdoor_jobs
+from job_assistant.services.eligibility import is_open_to_applicant
 from job_assistant.services.remote import is_remote_job
 from job_assistant.services.himalayas import fetch_himalayas_jobs
 from job_assistant.services.remote_boards import (
@@ -93,7 +94,9 @@ def _apply_filters(jobs: list[Job], prefs: dict) -> list[Job]:
         ]
 
     if prefs.get("remote_only", True):
-        filtered = [j for j in filtered if is_remote_job(j)]
+        filtered = [
+            j for j in filtered if is_remote_job(j) and is_open_to_applicant(j)
+        ]
 
     return filtered
 
