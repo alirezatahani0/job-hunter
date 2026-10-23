@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — Trading UI is the brief-to-production answer
+
+Choice: When a form asks for one frontend taken from a brief to production, and what belonged to you, the team, and the agents, use the Identity Global trading UI. Cursor and Claude review and refactor. They do not own the screen.
+
+Why: That is the frontend on the CV. The agents line stays inside the daily-use fact already written there.
+
 ## 2026-10-23 — Remember jobs that were already checked
 
 Choice: A role with a location limit, a skill far outside the CV, pay that is too low, or a posting that is gone is archived off Needs you. Its URL is stored in `data/checked_jobs.md`. The next board run skips those URLs.

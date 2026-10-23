@@ -18,6 +18,16 @@ I led three frontend engineers on this, so it had to be simple enough that peopl
 
 I don't keep a reading list. If something looks useful I try it on a branch that week. Day to day I use Cursor and Claude to look over a diff or try a refactor before I commit to it. The change I'm happiest with lately is moving the chart and order-book work into Web Workers. The main thread stopped blocking, by about 70%, and the UI quit hitching when the market got busy.
 
+## One frontend from brief to production, and who owned it
+
+The trading UI at Identity Global. Spot and futures, with live market data.
+
+Mine: I took it from the brief to the screens people trade on, and I stayed on it after launch. I set the architecture, the TypeScript standards, and the performance bar. I built the spot and futures interfaces, moved charts and the order book into Web Workers, and added Zod checks so a bad order fails before it reaches the trading API. After launch the refresh stayed at 200ms without the page stalling, and the trading pages stayed at Lighthouse 90+.
+
+The team's: three frontend engineers shipped inside that structure, in feature modules and shared UI. Backend owned the trading API. I worked with them on the contracts, retries, caching, and a refresh that keeps going when a tick drops.
+
+The agents': Cursor and Claude help me review a diff or try a refactor before I commit to it. I read what they suggest, and I decide what ships. They do not own the screen.
+
 ## A tight deadline
 
 At Fixefy we had a heavy screen that was going to miss its date. It was asking the server for far too much. I cut the requests by about 80%, left the information people actually used, and dropped the extra filters to the next release. It shipped in the sprint. That year we were landing about 95% of features on time, and this was one of the ones that almost didn't.
