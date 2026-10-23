@@ -30,13 +30,11 @@ The agents': Cursor and Claude help me review a diff or try a refactor before I 
 
 ## Agent setup right now
 
-Cursor, with one project rule that stays on. It says what this app is, where the code lives, and the limits: only skills from my CV, and no secrets in git.
+One short context file the agent always sees. It names the stack, the folder layout, and the rules: strict TypeScript, small feature modules, and a shared UI library. A second file says where state lives. Server data stays in React Query. What the person is doing stays in Zustand or Redux. Charts and heavy lists stay off the main thread.
 
-Context files: `docs/STATUS.md` and `docs/DECISIONS.md`. I read those before a change, and I update them when a decision is finished. For applications I also keep the CV and a short file of answers I have already given.
+Design rules sit next to that. Use a component that already exists before adding one. Color, type, and spacing come from the tokens. New UI is semantic HTML, keyboard reachable, and checked against the same spacing as the rest of the screen.
 
-Design rules: on the trading UI the rule is shared UI primitives, strict TypeScript, and small feature modules, so a new screen uses the same pieces. The personal app in front of me is a small static page, so the agent follows that project rule.
-
-Before agent-written code ships, I read the diff. The unit tests have to pass. On the trading UI, strict TypeScript and Jest run before merge, and a person reviews the change. The agent does not merge it.
+Before agent-written code ships, the typecheck, the linter, and Jest have to pass. CI runs those on the pull request. I read the diff. A person reviews it. The agent does not merge.
 
 ## A tight deadline
 
