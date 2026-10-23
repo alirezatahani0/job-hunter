@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — Agent setup answer stays inside the real files
+
+Choice: When a form asks what is in the agent setup, name the always-on project rule, `docs/STATUS.md`, and `docs/DECISIONS.md`. Design rules are the trading UI's shared primitives, strict TypeScript, and feature modules. A diff is read, the unit tests pass, and on that UI Jest and the typecheck run before merge.
+
+Why: That is the setup on this machine and on the CV. A design-token file is not part of it.
+
 ## 2026-10-23 — Trading UI is the brief-to-production answer
 
 Choice: When a form asks for one frontend taken from a brief to production, and what belonged to you, the team, and the agents, use the Identity Global trading UI. Cursor and Claude review and refactor. They do not own the screen.

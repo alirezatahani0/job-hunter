@@ -28,6 +28,16 @@ The team's: three frontend engineers shipped inside that structure, in feature m
 
 The agents': Cursor and Claude help me review a diff or try a refactor before I commit to it. I read what they suggest, and I decide what ships. They do not own the screen.
 
+## Agent setup right now
+
+Cursor, with one project rule that stays on. It says what this app is, where the code lives, and the limits: only skills from my CV, and no secrets in git.
+
+Context files: `docs/STATUS.md` and `docs/DECISIONS.md`. I read those before a change, and I update them when a decision is finished. For applications I also keep the CV and a short file of answers I have already given.
+
+Design rules: on the trading UI the rule is shared UI primitives, strict TypeScript, and small feature modules, so a new screen uses the same pieces. The personal app in front of me is a small static page, so the agent follows that project rule.
+
+Before agent-written code ships, I read the diff. The unit tests have to pass. On the trading UI, strict TypeScript and Jest run before merge, and a person reviews the change. The agent does not merge it.
+
 ## A tight deadline
 
 At Fixefy we had a heavy screen that was going to miss its date. It was asking the server for far too much. I cut the requests by about 80%, left the information people actually used, and dropped the extra filters to the next release. It shipped in the sprint. That year we were landing about 95% of features on time, and this was one of the ones that almost didn't.

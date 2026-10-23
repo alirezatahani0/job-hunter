@@ -4,7 +4,7 @@ Living snapshot of what works now. Keep this short. Update at the end of a sessi
 
 Last updated: 2026-10-23
 
-Current version: **v0.10.1** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
+Current version: **v0.10.2** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
 
 ## Working
 
