@@ -4,7 +4,7 @@ Living snapshot of what works now. Keep this short. Update at the end of a sessi
 
 Last updated: 2026-10-23
 
-Current version: **v0.10.3** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
+Current version: **v0.11.0** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
 
 ## Working
 
@@ -25,7 +25,7 @@ Current version: **v0.10.3** (`VERSION`, git tag). Each finished change bumps th
 ## In progress / next
 
 - `--until submit` sends the employer form for each Tailored card. Dover and Recruitee are supported. Applied is only after the site accepts the form. A captcha stop stays in Tailored. An account wall goes to Needs you.
-- Scheduled mail does not run until `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` are in `.env`. The inbox can still be read from this chat.
+- The 9:00 and 15:00 runs read `alireza.tahani01@gmail.com` in Mail. A rejection moves the matching card to Rejected. An interview invite gets a short reply. A question is left as a comment. Newsletters stay put.
 - `--until advance` tailors each Found card and attaches the Word resume and Word cover letter, then tries the same submit. If the employer form is not submitted, the card stays in Tailored and a comment names the failed submit step. A failed tailor or file step goes to Needs you.
 - Evaluate node (ATS pass / AI-written flag) is in the UI via **Check ATS**; still local heuristics, not a vendor ATS
 - Job search prefs (titles, tags, query `"react"`, max 40) are still hardcoded in `web.py`

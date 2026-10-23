@@ -1,6 +1,10 @@
 import unittest
 
+import tempfile
+from pathlib import Path
+
 from job_assistant.nodes.daily import run_daily
+from job_assistant.nodes.read_inbox import read_inbox
 from job_assistant.services.mail import MailMessage, decide, match_card, process_inbox
 
 
@@ -131,6 +135,30 @@ class MailDecisionTests(unittest.TestCase):
         self.assertEqual(moved, [])
         self.assertEqual(noted, [("card-1", "Replied to the interview invite.")])
         self.assertIn("Mail: left alone (Your daily job alert)", lines)
+
+    def test_read_inbox_moves_a_rejection_once(self):
+        message = MailMessage(
+            message_id="rej-1",
+            sender="hiring@perena.com",
+            subject="Your application at Perena",
+            body="We decided to move forward with other candidates.",
+        )
+        moved = []
+        with tempfile.TemporaryDirectory() as tmp:
+            seen = Path(tmp) / "seen.json"
+            kwargs = dict(
+                fetch=lambda: [message],
+                cards=[{"id": "card-1", "name": "Frontend Engineer — Perena"}],
+                move=lambda card: moved.append(card["id"]),
+                note=lambda _card, _text: None,
+                reply=lambda _message, _body: None,
+                seen_path=seen,
+            )
+            first = read_inbox(**kwargs)
+            second = read_inbox(**kwargs)
+        self.assertIn("Mail: moved to Rejected (Frontend Engineer — Perena)", first)
+        self.assertEqual(moved, ["card-1"])
+        self.assertEqual(second, ["Mail: read the inbox. Nothing new to act on."])
 
     def test_unknown_mail_is_left_alone(self):
         message = MailMessage(

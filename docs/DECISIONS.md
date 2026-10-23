@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — The scheduled job reads Mail
+
+Choice: The 9:00 and 15:00 runs read the inbox of alireza.tahani01@gmail.com in Mail. No separate Gmail API sign-in. A message already handled is not handled again.
+
+Why: The applications use that address. The chat sign-in cannot run from the scheduled job.
+
 ## 2026-10-23 — Agent setup answer is best practice, not this repo
 
 Choice: When a form asks what is in the agent setup, describe a context file for stack and folders, a state rule, design tokens and the shared UI library, then typecheck, lint, Jest, CI, and a human review before merge.
