@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — Run the morning job at 9:00
+
+Choice: launchd starts the daily run at 9:00 and 15:00 London time.
+
+Why: The morning pass should start an hour earlier. The afternoon pass stays at 15:00.
+
 ## 2026-10-22 — Keep only fully remote roles that hire from anywhere
 
 Choice: A listing is kept only when it is fully remote and does not limit the country, region, or timezone. Europe-only, Bulgaria-only, and a fixed country list are left off, including a list that names Bulgaria. Hybrid and partly remote roles stay off.
