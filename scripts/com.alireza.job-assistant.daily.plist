@@ -12,7 +12,7 @@
     <string>-m</string>
     <string>job_assistant.main</string>
     <string>--until</string>
-    <string>board</string>
+    <string>daily</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>

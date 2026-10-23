@@ -19,7 +19,7 @@ Personal LangGraph app: fetch remote jobs, rank them against a CV, optionally ta
 
 `fetch_jobs → sort_jobs → optimize_cv → evaluate_cv → write_cover_letter → apply_job → print_output`
 
-CLI can stop early with `--until fetch|sort|board|advance|submit|daily|optimize|cover|apply|end`. `--until board` scores every fetched role and adds each new match above 50% to the Trello Found column. There is no daily card cap. `--until advance` tailors each Found card, attaches the Word resume and cover letter, and tries to submit the employer form. `--until submit` sends the form for each Tailored card. `--until daily` fetches, adds Found cards, tailors and submits what it can, then reads mail. A launchd job runs `--until board` every day at 9:00 and 15:00 London time, so the schedule does not send the CV to Claude. Tailoring and cover letters are written in chat. Applied is only after the site accepts it. A captcha stop stays in Tailored. Web UI **Fetch & rank** runs until sort and keeps jobs that are fully remote and open to any location. **Check ATS** is local. **Write cover letter** uses Claude (`ANTHROPIC_API_KEY`). **Apply** runs only for jobs that are fully remote and open to any location, and submits Dover or Recruitee when the form can be completed. **Tailor resume** also needs the Anthropic key.
+CLI can stop early with `--until fetch|sort|board|advance|submit|daily|optimize|cover|apply|end`. `--until board` scores every fetched role and adds each new match above 50% to the Trello Found column. There is no daily card cap. `--until advance` tailors each Found card, attaches the Word resume and cover letter, and tries to submit the employer form. `--until submit` sends the form for each Tailored card. `--until daily` fetches, adds Found cards, tailors and submits what it can, then reads mail. A launchd job runs `--until daily` every day at 9:00 and 15:00 London time. It fetches, adds Found cards, writes the resume and cover letter from the CV, and applies. Claude is not called. Applied is only after the site accepts it. A captcha stop stays in Tailored. Web UI **Fetch & rank** runs until sort and keeps jobs that are fully remote and open to any location. **Check ATS** is local. **Write cover letter** and **Tailor resume** write from the CV on this machine. **Apply** runs only for jobs that are fully remote and open to any location, and submits Dover or Recruitee when the form can be completed.
 
 Default job source: `boards`. It fetches Eastern Europe and Bulgaria first (DEV.bg, Jobs.bg, JobTiger, Rabota.bg, No Fluff Jobs, Just Join IT, Bulldogjob, Djinni), then remote-first boards (We Work Remotely, 4 Day Week, JustRemote, Working Nomads, EU Remote Jobs, Dynamite Jobs, plus Himalayas, Wellfound, Remote OK, and Remotive), then general tech boards (LinkedIn, Indeed, Welcome to the Jungle, Arc, Y Combinator, Hacker News Who is Hiring, Landing.jobs, Relocate.me, and Glassdoor). Jobs.bg, Rabota.bg, Indeed, and Glassdoor often answer with a bot check and are skipped for that run. JustRemote, Dynamite Jobs, Welcome to the Jungle, Landing.jobs, and sometimes EU Remote Jobs do not put listings on the public page.
 
@@ -33,7 +33,7 @@ export PYTHONPATH=src
 python -m job_assistant.web   # http://127.0.0.1:8765
 ```
 
-Needs `ANTHROPIC_API_KEY` in `.env` for optimize and cover letters. ATS check is local. Do not commit `.env` or PDFs. Resume downloads are `.docx`, not PDF.
+ATS check, tailoring, and cover letters run locally. Do not commit `.env` or PDFs. Resume downloads are `.docx`, not PDF.
 
 ## Context files
 

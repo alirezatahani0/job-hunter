@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from job_assistant.services.ats_check import ai_tells_in
 from job_assistant.services.cv_loader import strip_private_contact
 from job_assistant.services.cv_matcher import extract_cv_profile, skills_in_text
-from job_assistant.services.llm import get_llm, invoke_structured
+from job_assistant.services.local_draft import draft_resume
 from job_assistant.state import JobAssistantState
 
 
@@ -119,24 +119,12 @@ def tailor_resume(job: dict, base_cv: str) -> dict:
             ]
         )
     )
-    matched = job.get("matched_skills") or [
-        skill for skill in profile.skills if skill in jd_skills
-    ]
-    llm = get_llm(temperature=0.35)
-    prompt = OPTIMIZE_PROMPT.format(
-        allowed_skills=", ".join(profile.skills) or "use only skills present in the original CV",
-        matched_skills=", ".join(matched) or "none detected — still do not invent skills",
-        base_cv=base_cv,
-        title=job["title"],
-        company=job["company"],
-        tags=", ".join(job.get("tags") or []),
-        url=job.get("url") or "",
-        description=(job.get("description") or "")[:4000],
+    matched = list(
+        job.get("matched_skills")
+        or [skill for skill in profile.skills if skill in jd_skills]
     )
-    tailored = invoke_structured(llm, OptimizedCV, prompt)
-    draft = _strip_ai_tells(tailored.updated_cv.strip())
-    changes = list(tailored.changes_made or [])
-    keywords = list(tailored.keywords_used or [])
+    draft_text, changes, keywords = draft_resume(base_cv, job, matched)
+    draft = _strip_ai_tells(draft_text.strip())
     paths = _persist(job, draft, changes, keywords)
     return {
         "updated_cv": paths["cv"],

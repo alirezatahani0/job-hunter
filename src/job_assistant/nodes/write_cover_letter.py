@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from job_assistant.services.llm import get_llm, invoke_structured
+from job_assistant.services.local_draft import draft_cover
 from job_assistant.state import Job, JobAssistantState
 
 APPLICANT_NAME = "Alireza Tahani"
@@ -135,19 +135,8 @@ def write_cover_letter_for_job(
     matched: list[str] | None = None,
 ) -> dict:
     skills = matched or list(job.get("matched_skills") or [])
-    llm = get_llm(temperature=0.4)
-    prompt = COVER_PROMPT.format(
-        name=APPLICANT_NAME,
-        email=APPLICANT_EMAIL,
-        matched_skills=", ".join(skills[:10]) or "TypeScript, React, Node.js",
-        cv=cv_text.strip()[:8000],
-        title=job.get("title") or "this role",
-        company=job.get("company") or "the company",
-        url=job.get("url") or "",
-        description=(job.get("description") or "")[:3500],
-    )
-    draft = invoke_structured(llm, CoverLetterDraft, prompt)
-    letter = finish_letter(draft.cover_letter or "")
+    letter_text, points = draft_cover(cv_text, job, skills)
+    letter = finish_letter(letter_text)
     record = {
         "job_id": job.get("id"),
         "title": job.get("title"),
@@ -155,7 +144,7 @@ def write_cover_letter_for_job(
         "url": job.get("url"),
         "cv_source": cv_source,
         "cover_letter": letter,
-        "points_used": list(draft.points_used or []),
+        "points_used": points,
         "written_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     return persist_cover(record)

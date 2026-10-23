@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — Each scheduled run tailors, writes the letter, and applies
+
+Choice: The 9:00 and 15:00 launchd job runs `--until daily`. For each new Found card it rewrites the CV summary around skills already on the CV, writes a short cover letter from those facts, and submits the form when the site allows it. Claude is not called.
+
+Why: The schedule has to apply on its own, and the CV should stay on this machine.
+
 ## 2026-10-23 — Wider search, and skip Claude for now
 
 Choice: A boards fetch reads up to 150 listings from each source, five Himalayas pages, and more Wellfound, Remote OK, and Remotive queries. Backend, mobile, and React Native titles are left off even when the title also says full-stack. The scheduled job stops after Found cards. It does not send the CV to Claude. A resume or cover letter for an application is written here.
