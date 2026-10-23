@@ -68,6 +68,11 @@ class EligibilityTests(unittest.TestCase):
         self.assertTrue(is_target_role(job(title="React Developer")))
         self.assertFalse(is_target_role(job(title="Backend Engineer")))
         self.assertFalse(is_target_role(job(title="Senior Product Designer (Full-Stack)")))
+        self.assertFalse(
+            is_target_role(job(title="Senior Backend Engineer (Python) - Full-Stack Mindset"))
+        )
+        self.assertFalse(is_target_role(job(title="Senior Mobile Engineer (React Native)")))
+        self.assertTrue(is_target_role(job(title="Senior Frontend Engineer, React Native experience")))
 
 
 class ChooseBoardJobsTests(unittest.TestCase):

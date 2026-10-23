@@ -191,9 +191,24 @@ def is_open_to_applicant(job: Job) -> bool:
     return not _description_locks_place(job)
 
 
+_WRONG_SPECIALTIES = (
+    "backend",
+    "back-end",
+    "back end",
+    "react native",
+    "react-native",
+    "ios",
+    "android",
+    "mobile",
+)
+
+
 def is_target_role(job: Job) -> bool:
     title = (job.get("title") or "").lower()
     if any(token in title for token in _REJECT_TITLES):
+        return False
+    frontend = any(token in title for token in ("frontend", "front-end", "front end"))
+    if any(token in title for token in _WRONG_SPECIALTIES) and not frontend:
         return False
     return any(token in title for token in _TARGET_ROLES)
 

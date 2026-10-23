@@ -184,7 +184,9 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
             _load(name, loader)
 
     # Eastern Europe and Bulgaria, then remote-first, then general tech.
-    limit = max(max_jobs, 40)
+    # A boards run has to see enough new worldwide frontend roles to attempt
+    # at least 10 applications. A single-source fetch keeps the smaller cap.
+    limit = max(max_jobs, 150 if boards else 40)
     _extra("devbg", lambda: fetch_devbg_jobs(limit=limit))
     _extra("jobsbg", lambda: fetch_jobsbg_jobs(limit=limit))
     _extra("jobtiger", lambda: fetch_jobtiger_jobs(limit=limit))
@@ -205,18 +207,24 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
         extra = prefs.get("himalayas_queries") or [
             "frontend engineer",
             "full stack engineer",
+            "react",
+            "next.js",
+            "typescript",
+            "web engineer",
         ]
         if isinstance(extra, str):
             extra = [q.strip() for q in extra.split(",") if q.strip()]
         for item in extra:
             if item not in queries:
                 queries.append(item)
+        himalayas_pages = max(pages, 5 if boards else 1)
+        himalayas_limit = max(max_jobs, 200 if boards else 40)
         _load(
             "himalayas",
             lambda: fetch_himalayas_jobs(
                 queries=queries,
-                pages=pages,
-                limit=max(max_jobs, 40),
+                pages=himalayas_pages,
+                limit=himalayas_limit,
                 worldwide_only=bool(prefs.get("worldwide_only", True)),
                 relevant_only=True,
             ),
@@ -228,13 +236,15 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
         roles = prefs.get("wellfound_roles")
         if isinstance(roles, str):
             roles = [r.strip() for r in roles.split(",") if r.strip()]
+        wellfound_pages = max(int(prefs.get("wellfound_pages") or 2), 4 if boards else 1)
+        wellfound_limit = max(max_jobs, 150 if boards else 40)
         _load(
             "wellfound",
             lambda: fetch_wellfound_jobs(
                 roles=roles,
-                pages=int(prefs.get("wellfound_pages") or 2),
+                pages=wellfound_pages,
                 remote_only=bool(prefs.get("remote_only", True)),
-                limit=max(max_jobs, 40),
+                limit=wellfound_limit,
                 relevant_only=True,
             ),
         )
@@ -265,20 +275,30 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
     if source == "remoteok" or boards or (
         source == "auto" and len(_apply_filters(jobs, prefs)) < 5
     ):
-        tags = ["react", "frontend", "typescript"] if boards else None
+        tags = ["react", "frontend", "typescript", "nextjs", "fullstack"] if boards else None
         _load(
             "remoteok",
-            lambda: fetch_remoteok_jobs(tags=tags, limit=max(max_jobs, 80)),
+            lambda: fetch_remoteok_jobs(tags=tags, limit=max(max_jobs, 200 if boards else 80)),
         )
 
     if source == "remotive" or boards or (
         source == "auto" and len(_apply_filters(jobs, prefs)) < 5
     ):
-        search = query or ("frontend" if boards else None)
-        _load(
-            "remotive",
-            lambda: fetch_remotive_jobs(search=search, limit=max(max_jobs, 80)),
-        )
+        def _remotive_batch() -> list[Job]:
+            if not boards:
+                return fetch_remotive_jobs(search=query or None, limit=max(max_jobs, 80))
+            found: list[Job] = []
+            seen: set[str] = set()
+            for search in ("frontend", "react", "full stack", "next.js", "typescript"):
+                for job in fetch_remotive_jobs(search=search, limit=80):
+                    job_id = str(job.get("id") or job.get("url") or "")
+                    if job_id in seen:
+                        continue
+                    seen.add(job_id)
+                    found.append(job)
+            return found
+
+        _load("remotive", _remotive_batch)
 
     filtered = _apply_filters(jobs, prefs)
     if not boards:

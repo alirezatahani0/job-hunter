@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — Wider search, and skip Claude for now
+
+Choice: A boards fetch reads up to 150 listings from each source, five Himalayas pages, and more Wellfound, Remote OK, and Remotive queries. Backend, mobile, and React Native titles are left off even when the title also says full-stack. The scheduled job stops after Found cards. It does not send the CV to Claude. A resume or cover letter for an application is written here.
+
+Why: One new card a day is not enough for 10 applications, and the CV should not be sent out to be rewritten.
+
 ## 2026-10-23 — Run the morning job at 9:00
 
 Choice: launchd starts the daily run at 9:00 and 15:00 London time.
