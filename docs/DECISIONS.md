@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-23 — Remember jobs that were already checked
+
+Choice: A role with a location limit, a skill far outside the CV, pay that is too low, or a posting that is gone is archived off Needs you. Its URL is stored in `data/checked_jobs.md`. The next board run skips those URLs.
+
+Why: Archiving a card alone lets the next fetch add the same role again.
+
 ## 2026-10-23 — Each scheduled run tailors, writes the letter, and applies
 
 Choice: The 9:00 and 15:00 launchd job runs `--until daily`. For each new Found card it rewrites the CV summary around skills already on the CV, writes a short cover letter from those facts, and submits the form when the site allows it. Claude is not called.

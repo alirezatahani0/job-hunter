@@ -99,6 +99,34 @@ class PublishBoardTests(unittest.TestCase):
         self.assertIn("New Co", fake.created[0]["name"])
         self.assertTrue(any("Found" in message for message in result["messages"]))
 
+    def test_a_checked_job_is_not_added_again(self):
+        fake = FakeTrello()
+        fake.open_cards = lambda: []
+        result = publish_board_node(
+            {
+                "messages": [],
+                "sorted_jobs": [
+                    {
+                        "id": "checked",
+                        "title": "Senior Frontend Engineer",
+                        "company": "Poland Co",
+                        "location": "Worldwide",
+                        "tags": [],
+                        "salary_min": None,
+                        "salary_max": None,
+                        "salary_text": "USD 120,000",
+                        "url": "https://example.com/checked",
+                        "description": "Worldwide frontend role.",
+                        "score": 0.9,
+                    }
+                ],
+            },
+            client=fake,
+            checked={"https://example.com/checked"},
+        )
+        self.assertEqual(fake.created, [])
+        self.assertTrue(any("checked" in message.lower() for message in result["messages"]))
+
 
 if __name__ == "__main__":
     unittest.main()

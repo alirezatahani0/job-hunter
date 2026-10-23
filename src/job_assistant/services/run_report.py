@@ -9,6 +9,7 @@ def board_report(*, fetched: int, kept: int, ranked: int, stats: dict) -> str:
         f"The run fetched {fetched} and kept {kept}. "
         f"Ranking scored all {ranked}. "
         f"From those, it skipped {stats.get('dropped_existing', 0)} already on the board, "
+        f"{stats.get('dropped_checked', 0)} already checked, "
         f"{stats.get('dropped_us', 0)} US-only, "
         f"{stats.get('dropped_region', 0)} country-locked, "
         f"{stats.get('dropped_role', 0)} outside frontend/full-stack, "

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from job_assistant.services.checked_jobs import clean_url
 from job_assistant.services.remote import is_remote_job
 from job_assistant.state import Job
 
@@ -244,6 +245,7 @@ def choose_board_jobs(
     *,
     limit: int | None = None,
     min_score: float = 0.5,
+    checked_urls: set[str] | None = None,
 ) -> tuple[list[Job], dict[str, int]]:
     """Keep every good frontend/full-stack remote match. Crypto pay ranks first."""
     stats = {
@@ -252,12 +254,14 @@ def choose_board_jobs(
         "dropped_remote": 0,
         "dropped_region": 0,
         "dropped_existing": 0,
+        "dropped_checked": 0,
         "dropped_company": 0,
         "dropped_score": 0,
         "dropped_unpaid": 0,
         "chosen": 0,
     }
-    known = {url.strip() for url in existing_urls if url and url.strip()}
+    known = {clean_url(url) for url in existing_urls if url and url.strip()}
+    checked = {clean_url(url) for url in (checked_urls or set()) if url and url.strip()}
     eligible: list[Job] = []
     for job in jobs:
         if is_us_restricted(job):
@@ -278,7 +282,10 @@ def choose_board_jobs(
         if is_closed_country_list(job):
             stats["dropped_region"] += 1
             continue
-        url = (job.get("url") or "").strip()
+        url = clean_url(job.get("url") or "")
+        if url and url in checked:
+            stats["dropped_checked"] += 1
+            continue
         if url and url in known:
             stats["dropped_existing"] += 1
             continue

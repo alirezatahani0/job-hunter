@@ -4,11 +4,11 @@ Living snapshot of what works now. Keep this short. Update at the end of a sessi
 
 Last updated: 2026-10-23
 
-Current version: **v0.9.0** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
+Current version: **v0.10.0** (`VERSION`, git tag). Each finished change bumps the version, commits, tags, and pushes.
 
 ## Working
 
-- Trello board **Job Search**: https://trello.com/b/mrGM8eAo/job-search — columns Needs you, Found, Tailored, Applied, Replied, Interview, Rejected. `--until board` scores every fetched role and adds each new match above 50%: crypto pay first, one company each, frontend/full-stack, fully remote, and open to any location. Europe-only, Bulgaria-only, timezone-limited, US-only, and country-list roles stay off. There is no daily card cap.
+- Trello board **Job Search**: https://trello.com/b/mrGM8eAo/job-search — columns Needs you, Found, Tailored, Applied, Replied, Interview, Rejected. `--until board` scores every fetched role and adds each new match above 50%: crypto pay first, one company each, frontend/full-stack, fully remote, and open to any location. Europe-only, Bulgaria-only, timezone-limited, US-only, and country-list roles stay off. URLs in `data/checked_jobs.md` stay off even after the card is archived. There is no daily card cap.
 - LangGraph pipeline: fetch → sort → optimize CV → evaluate → cover letter → apply → print. `--until board` stops after publishing Found cards.
 - CLI: `python -m job_assistant.main` with `--source boards` (or one board name) and `--until fetch|sort|board|advance|submit|daily|optimize|cover|apply|end`
 - `--until daily` fetches, scores every listing, adds every match above 50%, writes a resume and cover letter from the CV, submits what it can, then reads mail. It writes `output/reports/latest.md`. launchd `com.alireza.job-assistant.daily` runs that every day at 9:00 and 15:00 Europe/London. The resume and letter are written locally. The Mac has to be awake. Logs: `output/daily.log`.

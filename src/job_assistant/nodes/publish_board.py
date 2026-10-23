@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from job_assistant.services.checked_jobs import load_checked_urls
 from job_assistant.services.eligibility import card_description, card_name, choose_board_jobs
 from job_assistant.services.run_report import board_report
 from job_assistant.services.trello import TrelloClient, trello_from_env, urls_on_card
@@ -10,15 +11,20 @@ from job_assistant.state import JobAssistantState
 FOUND = "Found"
 
 
-def publish_board_node(state: JobAssistantState, client: TrelloClient | None = None) -> dict:
-    """Add the best new matches to the Found column. Skip cards already on the board."""
+def publish_board_node(
+    state: JobAssistantState,
+    client: TrelloClient | None = None,
+    checked: set[str] | None = None,
+) -> dict:
+    """Add the best new matches to the Found column. Skip cards already on the board or already checked."""
     jobs = list(state.get("sorted_jobs") or state.get("jobs") or [])
     board = client or trello_from_env()
     existing: set[str] = set()
     for card in board.open_cards():
         existing.update(urls_on_card(card))
+    checked_urls = load_checked_urls() if checked is None else checked
 
-    chosen, stats = choose_board_jobs(jobs, existing)
+    chosen, stats = choose_board_jobs(jobs, existing, checked_urls=checked_urls)
     links: list[str] = []
     for job in chosen:
         created = board.create_card(
@@ -34,6 +40,7 @@ def publish_board_node(state: JobAssistantState, client: TrelloClient | None = N
     summary = (
         f"Trello Found: added {stats['chosen']} "
         f"(skipped {stats['dropped_existing']} already on the board, "
+        f"{stats['dropped_checked']} already checked, "
         f"{stats['dropped_us']} US-only, {stats['dropped_region']} country-locked, "
         f"{stats['dropped_remote']} not remote, "
         f"{stats['dropped_role']} outside frontend/full-stack, "
