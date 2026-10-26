@@ -28,6 +28,13 @@ from job_assistant.services.glassdoor import GlassdoorBlocked, fetch_glassdoor_j
 from job_assistant.services.eligibility import is_open_to_applicant
 from job_assistant.services.remote import is_remote_job
 from job_assistant.services.himalayas import fetch_himalayas_jobs
+from job_assistant.services.more_boards import (
+    fetch_dailyremote_jobs,
+    fetch_javascript_jobs,
+    fetch_jobicy_jobs,
+    fetch_reactjobsboard_jobs,
+    fetch_remote_frontend_jobs,
+)
 from job_assistant.services.remote_boards import (
     fetch_dynamite_jobs,
     fetch_euremote_jobs,
@@ -201,6 +208,11 @@ def fetch_jobs_node(state: JobAssistantState) -> dict:
     _extra("workingnomads", lambda: fetch_workingnomads_jobs(limit=limit))
     _extra("euremote", lambda: fetch_euremote_jobs(limit=limit))
     _extra("dynamite", lambda: fetch_dynamite_jobs(limit=limit))
+    _extra("jobicy", lambda: fetch_jobicy_jobs(limit=limit))
+    _extra("dailyremote", lambda: fetch_dailyremote_jobs(limit=limit))
+    _extra("javascriptjobs", lambda: fetch_javascript_jobs(limit=limit))
+    _extra("remotefrontend", lambda: fetch_remote_frontend_jobs(limit=limit))
+    _extra("reactjobsboard", lambda: fetch_reactjobsboard_jobs(limit=limit))
 
     if source in {"himalayas", "auto", "boards"}:
         queries = [query] if query else []

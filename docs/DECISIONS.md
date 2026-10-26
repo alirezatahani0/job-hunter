@@ -13,6 +13,12 @@ Rejected: ... (optional)
 
 ---
 
+## 2026-10-26 — More remote job sites
+
+Choice: A boards fetch also reads Jobicy, Daily Remote, JavaScript Jobs, Remote Frontend Jobs, and React Jobs Board. A country or region on the listing is still left off.
+
+Why: The boards already in the run were not producing new matches. These five publish remote frontend and full-stack roles on a public page.
+
 ## 2026-10-23 — The scheduled job reads Mail
 
 Choice: The 9:00 and 15:00 runs read the inbox of alireza.tahani01@gmail.com in Mail. No separate Gmail API sign-in. A message already handled is not handled again.
